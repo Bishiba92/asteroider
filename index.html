@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodger Game!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            border: 3px solid #fff;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #message {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: red;
+        }
+        #shields {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 24px;
+            color: cyan;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="message"></div>
+	<script src="https://bishiba92.github.io/bishiba-js-audio-player/audioPlayer.js" defer></script>
+	<script src="joystick.js" defer></script>
+	<script src="gamepad.js" defer></script>
+    <script src="main.js" defer></script>
+</body>
+</html>
