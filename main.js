@@ -79,7 +79,7 @@ const canvas = document.getElementById('gameCanvas');
 				this.y = y;
 				this.vertices = this.generateVertices();
 				this.speed = 2 + Math.random() * 2;
-				this.speed *= 1 + time * 0.0001;
+				this.speed *= 1 + time * 0.00001;
 				this.color = '#8B4513';
 				this.isDanger = true;
 				this.index = -1;
@@ -468,7 +468,7 @@ const canvas = document.getElementById('gameCanvas');
             stars.forEach(star => {
                 ctx.fillRect(star.x, star.y, 2, 2);
 				let speed = star.speed;
-				speed *= 1 + time * 0.0001
+				speed *= 1 + time * 0.00001
                 star.y += speed * timeScale;
                 if (star.y > canvas.height) {
                     star.y = 0;
@@ -542,7 +542,7 @@ const canvas = document.getElementById('gameCanvas');
 
 			draw();
 			if (!isGameOver) {
-				if (time % 10 == 0) time++;
+				time++;
 				if (time % 30 == 0) score++;
 				immortalTimer();
 				if (time % 3000 == 0) createObstacle();
