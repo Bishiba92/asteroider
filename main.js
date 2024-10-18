@@ -575,8 +575,9 @@ const canvas = document.getElementById('gameCanvas');
 			}
 		}
 
-
+		let restartInt = 0;
         function startGame() {
+			if (restartInt++ > 0) location.reload();
 			canvas.removeEventListener('mousedown', startGame);
 			canvas.removeEventListener('touchstart', startGame);
 			canvas.addEventListener('mousedown', startJoystick);
