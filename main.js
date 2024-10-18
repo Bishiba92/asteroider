@@ -322,7 +322,7 @@ const canvas = document.getElementById('gameCanvas');
         }
 
         function createShield() {
-            if (Math.random() < 0.002) { // 5% chance of spawning
+            if (Math.random() < 0.001) { // 5% chance of spawning
                 const x = Math.random() * (canvas.width - 30);
                 const y = -30;
                 shields.push(new Shield(x, y));
@@ -330,7 +330,7 @@ const canvas = document.getElementById('gameCanvas');
         }
 
         function createGoldStar() {
-            if (Math.random() < 0.005) { // 3% chance of spawning
+            if (Math.random() < 0.004) { // 3% chance of spawning
                 const x = Math.random() * (canvas.width - 30);
                 const y = -30;
                 goldStars.push(new GoldStar(x, y));
