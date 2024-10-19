@@ -3,7 +3,17 @@ audioPlayer.preloadMusic(['bgm1']);
 audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
 // audioPlayer.preloadBGS(['bgs1']);
 // audioPlayer.playSFX('sfx1');
-// audioPlayer.playBGS('bgs1');          
+// audioPlayer.playBGS('bgs1');        
+const shipImages = [new Image(), new Image()];
+shipImages[0].src = 'ship0.png';
+shipImages[1].src = 'ship1.png';
+
+const playerShieldImage = new Image();
+playerShieldImage.src = 'shield.png';
+
+const playerShieldGlowImage = new Image();
+playerShieldGlowImage.src = 'shieldGlow.png';
+  
 
 const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -19,6 +29,8 @@ const canvas = document.getElementById('gameCanvas');
         let player = {
             x: canvas.width / 2,
             y: canvas.height - 60,
+			radius: 20,
+			scale: 0.4,
             width: 30,
             height: 30,
             speed: 5,
@@ -26,8 +38,10 @@ const canvas = document.getElementById('gameCanvas');
             shields: 3,
             isImmortal: false,
             immortalTime: 0,
-			hasShield: false
+			hasShield: false,
+			selectedShipImage: shipImages[0]
         };
+		player.selectedShipImage = shipImages[Math.floor(Math.random() * shipImages.length)];
 
         let obstacles = [];
         let stars = [];
@@ -53,7 +67,7 @@ const canvas = document.getElementById('gameCanvas');
 			}
 
 			draw() {
-				ctx.globalAlpha = Math.max(0.2, this.life / this.lifespan); // Reduce flickering by limiting alpha to minimum 0.2
+				ctx.globalAlpha = Math.max(0, this.life / this.lifespan); // Reduce flickering by limiting alpha to minimum 0.2
 				ctx.fillStyle = this.color;
 				ctx.beginPath();
 				ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -63,6 +77,11 @@ const canvas = document.getElementById('gameCanvas');
 
 			update() {
 				this.life -= 0.02 * timeScale;
+				const lifeRatio = this.life / this.lifespan;
+				
+				// Cubic easing for size fade-out: starts slow, accelerates near the end
+				//this.size = Math.max(0, this.size * (lifeRatio ** 2)); 
+				
 				// Use this.speed to move the particle
 				this.x += Math.cos(this.direction) * this.speed * timeScale;
 				this.y += Math.sin(this.direction) * this.speed * timeScale;
@@ -73,108 +92,159 @@ const canvas = document.getElementById('gameCanvas');
 			}
 		}
 
-        class Obstacle {
+	class Obstacle {
+		constructor(x, y) {
+			this.x = x;
+			this.y = y;
+
+			// Select a random asteroid image from asteroid0.png to asteroid9.png
+			const randomIndex = Math.floor(Math.random() * 10);
+			this.image = new Image();
+			this.image.src = `asteroid${randomIndex}.png`;
+
+			// Set initial size and scale factor (randomized by ±5%)
+			this.baseSize = 50; // Example base size, you can adjust this
+			this.scale = 0.95 + Math.random() * 0.1; // Random scale factor between 0.95 to 1.05
+			this.width = this.baseSize * this.scale;
+			this.height = this.baseSize * this.scale;
+
+			// Rotation per tick (randomized between 0 to 0.1 degrees per tick)
+			this.rotationSpeed = Math.random() * 0.1; // Rotation speed per tick in degrees
+			this.rotationAngle = Math.random() * 360 - 180; // Initial rotation angle
+
+			this.speed = 2 + Math.random() * 2;
+			this.speed *= 1 + time * 0.00001;
+			this.isActive = true;
+		}
+
+		// Update method for movement and rotation
+		update() {
+			this.y += this.speed * timeScale;
+
+			// Update rotation
+			this.rotationAngle += this.rotationSpeed * timeScale;
+
+			// Check if obstacle moves off the screen
+			if (this.y > canvas.height && this.isActive) {
+				createObstacle();
+				obstacles = obstacles.filter(item => item !== this);
+				this.isActive = false;
+			}
+		}
+
+		// Draw method to render the asteroid image with rotation
+		draw() {
+			ctx.save(); // Save current context
+			ctx.translate(this.x + this.width / 2, this.y + this.height / 2); // Move to the center of the asteroid
+			ctx.rotate((this.rotationAngle * Math.PI) / 180); // Rotate based on rotationAngle
+			ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height); // Draw image
+			ctx.restore(); // Restore original context
+		}
+
+		// Collision detection method using object's radius and scaled size
+		checkCollision(object) {
+			// Calculate the center of the asteroid
+			const asteroidCenterX = this.x + this.width / 2;
+			const asteroidCenterY = this.y + this.height / 2;
+
+			// Calculate distance between the asteroid center and the object's (player's) center
+			const dx = asteroidCenterX - object.x;
+			const dy = asteroidCenterY - object.y;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			// Calculate the radius of the asteroid using the larger of width or height
+			const asteroidRadius = Math.max(this.width, this.height) / 2;
+
+			// Debug logging
+			console.log("Asteroid Center:", asteroidCenterX, asteroidCenterY);
+			console.log("Player Position:", object.x, object.y);
+			console.log("Distance:", distance);
+			console.log("Asteroid Radius:", asteroidRadius);
+			console.log("Player Radius:", object.radius);
+
+			// Check for collision
+			if (distance <= object.radius + asteroidRadius) {
+				console.log('Collision detected');
+				return true; // Collision detected
+			}
+			console.log('No collision detected');
+			return false; // No collision
+		}
+
+	}
+
+		class Shield {
 			constructor(x, y) {
 				this.x = x;
 				this.y = y;
-				this.vertices = this.generateVertices();
 				this.speed = 2 + Math.random() * 2;
-				this.speed *= 1 + time * 0.00001;
-				this.color = '#8B4513';
-				this.isDanger = true;
-				this.index = -1;
-				this.isActive = true;
+				this.scale = 1;
+				this.baseSize = 50;
+
+				// Load the base shield, glow, and shine images
+				this.image = new Image();
+				this.image.src = 'shield.png'; // Base shield
+
+				this.glowImage = new Image();
+				this.glowImage.src = 'shieldGlow.png'; // Glowing overlay
+
+				this.shineImage = new Image();
+				this.shineImage.src = 'shieldShine.png'; // Extra feathered glow
+
+				// Default dimensions
+				this.width = this.baseSize * this.scale;
+				this.height = this.baseSize * this.scale;
+
+				// Alpha values for smooth pulsing (use sine wave over time)
+				this.pulseSpeed = 0.05; // Control how fast both effects pulse
+				this.pulseTime = 0;
+				this.alphaDrift = 1.0; // Initial alpha for the main glow
+				this.shineAlphaDrift = 1.0; // Initial alpha for the secondary shine
 			}
 
-			generateVertices() {
-				const vertices = [];
-				const sides = 5 + Math.floor(Math.random() * 4);
-				const angleStep = (Math.PI * 2) / sides;
-				for (let i = 0; i < sides; i++) {
-					const radius = 15 + Math.random() * 15;
-					vertices.push({
-						x: this.x + Math.cos(i * angleStep) * radius,
-						y: this.y + Math.sin(i * angleStep) * radius
-					});
-				}
-				return vertices;
-			}
-
+			// Draw the shield with both glowing and shine overlays
 			draw() {
-				ctx.fillStyle = this.color;
-				ctx.beginPath();
-				ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
-				for (let i = 1; i < this.vertices.length; i++) {
-					ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+				ctx.save(); // Save current context
+				ctx.translate(this.x, this.y); // Move to the shield's position
+
+				// Draw the base shield image if it's loaded
+				if (this.image.complete) {
+					ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
 				}
-				ctx.closePath();
-				ctx.fill();
+
+				// Smooth pulsing effect for the glow using a sine wave
+				this.pulseTime += this.pulseSpeed;
+				this.alphaDrift = 0.7 + Math.sin(this.pulseTime) * 0.3; // Alpha value between 0.7 and 1.0 for the glow
+				this.shineAlphaDrift = 0.5 + Math.sin(this.pulseTime * 0.8) * 0.2; // Lower alpha for the shine, between 0.5 and 0.7
+
+				// Draw the main glow overlay (shieldGlow.png)
+				ctx.globalCompositeOperation = 'screen'; // Blend mode for soft glow
+				ctx.globalAlpha = this.alphaDrift; // Alpha for the main glow
+				if (this.glowImage.complete) {
+					ctx.drawImage(this.glowImage, -this.width / 2, -this.height / 2, this.width, this.height);
+				}
+
+				// Draw the secondary shine overlay (shieldShine.png) with lower alpha
+				ctx.globalAlpha = this.shineAlphaDrift; // Lower alpha for the secondary shine
+				if (this.shineImage.complete) {
+					ctx.drawImage(this.shineImage, -this.width / 2, -this.height / 2, this.width, this.height);
+				}
+
+				// Reset context settings
+				ctx.globalAlpha = 1.0;
+				ctx.globalCompositeOperation = 'source-over'; // Reset to default composition mode
+				ctx.restore(); // Restore original context
 			}
 
 			update() {
 				this.y += this.speed * timeScale;
-				this.vertices.forEach(vertex => vertex.y += this.speed * timeScale);
-				if (this.y > canvas.height && this.isActive) {
-					createObstacle();
-					obstacles = obstacles.filter(item => item !== this);
-					this.isActive = false;
+				if (this.y > canvas.height) {
+					this.y = -30;
+					this.x = Math.random() * (canvas.width - 30);
 				}
-			}
-
-			// Collision checking function
-			checkCollision(object) {
-				for (let i = 0; i < this.vertices.length; i++) {
-					const vertex = this.vertices[i];
-					const dx = vertex.x - object.x;
-					const dy = vertex.y - object.y;
-					const distance = Math.sqrt(dx * dx + dy * dy);
-					
-					// Check if the distance between object center and vertex is less than or equal to object's radius
-					if (distance <= object.radius) {
-						return true; // Collision detected
-					}
-				}
-				return false; // No collision detected
 			}
 		}
-
-        class Shield {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.speed = 2 + Math.random() * 2;
-            }
-			draw(scale = 0.8) {  // Default scale of 1 (no scaling if not provided)
-				ctx.fillStyle = 'cyan';
-				ctx.beginPath();
-
-				// Scale all the coordinates by the provided scale factor
-
-				// Move to top center of the shield
-				ctx.moveTo(this.x, this.y - 30 * scale);  // Scale the vertical distance by the factor
-
-				// Left side of the shield
-				ctx.lineTo(this.x - 25 * scale, this.y - 25 * scale); // top-left
-				ctx.lineTo(this.x - 22 * scale, this.y + 10 * scale); // mid-left
-				ctx.lineTo(this.x, this.y + 25 * scale);              // bottom point
-
-				// Right side of the shield
-				ctx.lineTo(this.x + 22 * scale, this.y + 10 * scale); // mid-right
-				ctx.lineTo(this.x + 25 * scale, this.y - 25 * scale); // top-right
-
-				ctx.closePath(); // Connect back to the top point
-				ctx.fill();
-			}
-
-            update() {
-                this.y += this.speed * timeScale;
-                if (this.y > canvas.height) {
-                    this.y = -30;
-                    this.x = Math.random() * (canvas.width - 30);
-                }
-            }
-        }
-
+		
         class GoldStar {
             constructor(x, y) {
                 this.x = x;
@@ -212,37 +282,62 @@ const canvas = document.getElementById('gameCanvas');
             }
         }
         
-        function drawPlayer() {
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.angle);
-            if (player.isImmortal && !player.hasShield) {
-                ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
-            }
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.moveTo(0, -20); // Tip of the spaceship
-            ctx.lineTo(-15, 15); // Left wing
-            ctx.lineTo(-5, 10);
-            ctx.lineTo(0, 15);
-            ctx.lineTo(5, 10);
-            ctx.lineTo(15, 15); // Right wing
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.moveTo(-5, 10);
-            ctx.lineTo(0, -10);
-            ctx.lineTo(5, 10);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = 'teal';
-            ctx.beginPath();
-            ctx.arc(0, -5, 4, 0, Math.PI * 2); // Cockpit
-            ctx.fill();
-            ctx.restore();
-            ctx.globalAlpha = 1.0; // Reset transparency
-        }
+        // function drawPlayer() {
+            // ctx.save();
+            // ctx.translate(player.x, player.y);
+            // ctx.rotate(player.angle);
+            // if (player.isImmortal && !player.hasShield) {
+                // ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
+            // }
+            // ctx.fillStyle = 'white';
+            // ctx.beginPath();
+            // ctx.moveTo(0, -20); // Tip of the spaceship
+            // ctx.lineTo(-15, 15); // Left wing
+            // ctx.lineTo(-5, 10);
+            // ctx.lineTo(0, 15);
+            // ctx.lineTo(5, 10);
+            // ctx.lineTo(15, 15); // Right wing
+            // ctx.closePath();
+            // ctx.fill();
+            // ctx.fillStyle = 'red';
+            // ctx.beginPath();
+            // ctx.moveTo(-5, 10);
+            // ctx.lineTo(0, -10);
+            // ctx.lineTo(5, 10);
+            // ctx.closePath();
+            // ctx.fill();
+            // ctx.fillStyle = 'teal';
+            // ctx.beginPath();
+            // ctx.arc(0, -5, 4, 0, Math.PI * 2); // Cockpit
+            // ctx.fill();
+            // ctx.restore();
+            // ctx.globalAlpha = 1.0; // Reset transparency
+        // }
+		
+		// Draw player as PNG
+		function drawPlayer() {
+			ctx.save();
+			ctx.translate(player.x, player.y); // Move the context to the player's position
+			ctx.rotate(player.angle); // Rotate the context to match the player's angle
+
+			// Apply transparency effect if the player is immortal and doesn't have a shield
+			if (player.isImmortal && !player.hasShield) {
+				ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
+			}
+
+			// Assuming the player's image is preloaded and stored in `player.selectedShipImage`
+			const img = player.selectedShipImage;
+
+			// Scale the width and height of the image based on the player's scale factor
+			const imgWidth = img.width * player.scale;
+			const imgHeight = img.height * player.scale;
+
+			// Draw the player's image at the center, taking into account the scaled size
+			ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+
+			ctx.restore(); // Restore the context's state to avoid affecting other drawings
+			ctx.globalAlpha = 1.0; // Reset transparency
+		}
 
 		function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifetimeMod = 1.5, explosiveForce = 5000, colors = ['#FF4500', '#FFD700', '#FF6347', '#FFFFFF']) {
 			for (let i = 0; i < particleCount; i++) {
@@ -275,34 +370,6 @@ const canvas = document.getElementById('gameCanvas');
                 let xOffset = Math.random() * 10 - 5;
                 let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
                 particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction));
-            }
-
-            // Backward movement - smaller particles facing forward
-            if (keysPressed['ArrowDown'] || keysPressed['s']) {
-                for (let i = 0; i < 3; i++) {
-                    let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
-                    let size = Math.random() * 1.5 + 0.5;
-                    let direction = -Math.PI / 2 + (Math.random() - 0.5) * 0.1; // General upward direction with slight randomness
-                    particles.push(new Particle(player.x, player.y - 10, color, size, 0.3, direction));
-                }
-            }
-
-            // Sideward movement - small particles from wing tips
-            if (keysPressed['ArrowLeft'] || keysPressed['a']) {
-                for (let i = 0; i < 3; i++) {
-                    let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
-                    let size = Math.random() * 1.5 + 0.5;
-                    let direction = Math.PI + (Math.random() - 0.5) * 0.2; // General leftward direction from right wing tip
-                    particles.push(new Particle(player.x + 15, player.y + 15, color, size, 0.3, direction));
-                }
-            }
-            if (keysPressed['ArrowRight'] || keysPressed['d']) {
-                for (let i = 0; i < 3; i++) {
-                    let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
-                    let size = Math.random() * 1.5 + 0.5;
-                    let direction = 0 + (Math.random() - 0.5) * 0.2; // General rightward direction from left wing tip
-                    particles.push(new Particle(player.x - 15, player.y + 15, color, size, 0.3, direction));
-                }
             }
         }
 
@@ -372,16 +439,12 @@ const canvas = document.getElementById('gameCanvas');
 		}
 
         function checkCollision() {
-            obstacles.forEach((obstacle, index) => {
-                obstacle.vertices.forEach(vertex => {
-                    const distX = vertex.x - player.x;
-                    const distY = vertex.y - player.y;
-                    const distance = Math.sqrt(distX * distX + distY * distY);
-                    if (distance < 20) {
-                        handleCollision(obstacle, index);
-                    }
-                });
-            });
+			obstacles.forEach((obstacle, index) => {
+				if (obstacle.checkCollision(player)) {
+					console.log("collision")
+					handleCollision(obstacle, index); // Handle the obstacle collision
+				}
+			});
 
             shields.forEach((shield, index) => {
                 const distX = shield.x - player.x;
@@ -408,7 +471,6 @@ const canvas = document.getElementById('gameCanvas');
 
         function handleCollision(obstacle, index) {
             if (player.shields > 0) {
-				player.hasShield = false;
                 if (!player.isImmortal) player.shields -= 1;
                 createExplosion(obstacle.x, obstacle.y);
                 obstacles.splice(index, 1); // Remove the obstacle on impact
@@ -426,6 +488,8 @@ const canvas = document.getElementById('gameCanvas');
 					canvas.addEventListener('mousedown', startGame);
 					canvas.addEventListener('touchstart', startGame);
                 }
+				player.hasShield = false;
+				player.immortalTime = 10;
             }
         }
 
@@ -436,7 +500,7 @@ const canvas = document.getElementById('gameCanvas');
             }
             score += 5;
             shields.splice(index, 1);
-            grantImmortality();
+            grantImmortality(60*6);
 			player.hasShield = true;
         }
 
@@ -511,6 +575,28 @@ const canvas = document.getElementById('gameCanvas');
 
 			ctx.fillText(text, x, y);                   // Write the text at the specified (x, y) coordinates
 		}
+		function drawRemainingShields() {
+			const iconSize = 40; // Size of the shield icons
+			const iconSpacing = 10; // Spacing between the shield icons
+			const startX = 30; // Starting X position
+			const startY = 30; // Starting Y position
+
+			// Iterate through the player's shield count and draw the shields
+			for (let i = 0; i < player.shields; i++) {
+				const x = startX + i * (iconSize + iconSpacing); // Calculate X position for each shield
+
+				// Draw the base shield icon (shield.png)
+				if (playerShieldImage.complete) {
+					ctx.drawImage(playerShieldImage, x, startY, iconSize, iconSize);
+				}
+
+				// Draw the shield glow icon (shieldGlow.png)
+				if (playerShieldGlowImage.complete) {
+					ctx.drawImage(playerShieldGlowImage, x, startY, iconSize, iconSize);
+				}
+			}
+		}
+
 
 		let gameoverMessage = "Game Over! Press R to Restart";
         function draw() {
@@ -521,8 +607,8 @@ const canvas = document.getElementById('gameCanvas');
 			drawGoldStars();
 			drawPlayer();
 			drawShieldCircle();
-			writeText('🛡 '.repeat(player.shields), 30, 30);
-			writeText(score, 35, 70);
+			drawRemainingShields();
+			writeText(score, 35, 120);
 
 			if (isGameOver) {
 				writeText(gameoverMessage, canvas.width / 2, canvas.height / 2, 30, "red", "center");
@@ -603,18 +689,18 @@ const canvas = document.getElementById('gameCanvas');
         }
 
         function updatePlayerPosition() {
-            if ((keysPressed['ArrowLeft'] || keysPressed['a']) && player.x > 0) {
+            if ((keysPressed['ArrowLeft'] || keysPressed['a'])) {
                 player.x -= player.speed * timeScale;
                 player.angle = -0.3;
             }
-            if ((keysPressed['ArrowRight'] || keysPressed['d']) && player.x < canvas.width) {
+            if ((keysPressed['ArrowRight'] || keysPressed['d'])) {
                 player.x += player.speed * timeScale;
                 player.angle = 0.3;
             }
-            if ((keysPressed['ArrowUp'] || keysPressed['w']) && player.y > 0) {
+            if ((keysPressed['ArrowUp'] || keysPressed['w'])) {
                 player.y -= player.speed * timeScale;
             }
-            if ((keysPressed['ArrowDown'] || keysPressed['s']) && player.y < canvas.height) {
+            if ((keysPressed['ArrowDown'] || keysPressed['s'])) {
                 player.y += player.speed * timeScale;
             }
         }
