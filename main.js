@@ -16,16 +16,19 @@ playerShieldImage.src = 'shield.png';
 const playerShieldGlowImage = new Image();
 playerShieldGlowImage.src = 'shieldGlow.png';
 
-let fps = 0; // Store the current FPS
-let fpsCounter = 0; // Counts the number of frames in a given second
+let fpsCap = 60; // Target FPS
+let fpsInterval = 1000 / fpsCap; // Calculate the time interval between frames for the target FPS
+let lastFrameTime = performance.now(); // Track the time of the last frame
+let fps = 0; // Current FPS
+let fpsCounter = 0; // Number of frames rendered in the last second
 let fpsLastTime = performance.now(); // Track the last time we calculated the FPS
-let fpsTimeInterval = 1000; // Calculate FPS every 1000 ms (1 second)
 
-let progressionSpeed = 0.00005; // How much faster the game gets as the game progresses
+let progressionSpeed = 0.0006; // How much faster the game gets as the game progresses
 
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+ctx.font = `${this.size} "Press Start 2P"`;
 
 function resizeCanvasToWindow() {
     const canvas = document.getElementById('gameCanvas');
@@ -111,14 +114,16 @@ function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifet
     }
 }
 function createParticles() {
-    let intensity = keysPressed['ArrowUp'] || keysPressed['w'] ? 10 : keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['ArrowRight'] || keysPressed['d'] ? 5 : 2;
+    let intensity = keysPressed['ArrowUp'] || keysPressed['w'] ? 25 : keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['ArrowRight'] || keysPressed['d'] ? 5 : 2;
     intensity *= timeScale * timeScale;
+	 intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
         let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
         let size = Math.random() * 2 + 1;
         let xOffset = Math.random() * 10 - 5;
         let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
-        particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction));
+		  let speedMod = (1 + time * progressionSpeed) * (1 + Math.random() * 2);
+        particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction, speedMod));
     }
 }
 
@@ -380,14 +385,11 @@ function immortalTimer() {
     }
 }
 
-function writeText(text, anchor, offset = {
-        x: 0,
-        y: 0
-    }, fontSize = 30, color = 'white') {
+function writeText(text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white') {
     const canvasWidth = ctx.canvas.width; // Get canvas width
     const canvasHeight = ctx.canvas.height; // Get canvas height
     ctx.fillStyle = color; // Set the color for the text
-    ctx.font = `${fontSize}px Arial`; // Set the font size and font family
+    ctx.font = `${fontSize}px "Press Start 2P"`; // Set the font size and font family
     const textWidth = ctx.measureText(text).width; // Measure the width of the text
     const textHeight = fontSize; // Simplified approximation of text height (based on font size)
 
@@ -486,23 +488,35 @@ function draw() {
     drawJoystick();
 }
 
-// Modify the game loop to include the menu display
-function gameLoop() {
-    resizeCanvasToWindow();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function gameLoop(currentTime) {
+    requestAnimationFrame(gameLoop); // Continue the loop
 
-    if (isMainMenu) {
-        drawMainMenu();
-		handleGamepadInput(); // Check for gamepad input
-    } else {
-        drawBackground();
-        keepPlayerInBounds();
-        updatePlayerFromJoystick();
-        draw();
-        updateGame();
+    // Calculate the time difference between the current frame and the last frame
+    let elapsedTime = currentTime - lastFrameTime;
+
+    // If enough time has passed since the last frame (based on the FPS cap)
+    if (elapsedTime > fpsInterval) {
+        // Adjust for any slight time deviation
+        lastFrameTime = currentTime - (elapsedTime % fpsInterval);
+
+        // Update and render the game
+        resizeCanvasToWindow();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (isMainMenu) {
+            drawMainMenu();
+            handleGamepadInput(); // Check for gamepad input
+        } else {
+            drawBackground();
+            keepPlayerInBounds();
+            updatePlayerFromJoystick();
+            draw();
+            updateGame();
+        }
+
+        // Calculate and display FPS
+        calculateAndDisplayFPS(currentTime);
     }
-	calculateAndDisplayFPS(); // Calculate and display FPS
-    requestAnimationFrame(gameLoop);
 }
 
 // Function to update the game (separated for clarity)
@@ -519,29 +533,18 @@ function updateGame() {
         createParticles();
     }
 }
-// Function to calculate FPS and display it
-function calculateAndDisplayFPS() {
-    const now = performance.now(); // Get the current time
-    const delta = now - fpsLastTime; // Time difference from the last FPS calculation
+// Function to calculate and display FPS
+function calculateAndDisplayFPS(currentTime) {
+    fpsCounter++; // Increment frame count
 
-    fpsCounter++; // Increment frame counter
-
-    if (delta >= fpsTimeInterval) { // If one second has passed
-        fps = Math.round((fpsCounter * 1000) / delta); // Calculate FPS (frames per second)
-        fpsLastTime = now; // Reset the last time
+    // If one second has passed, calculate FPS
+    if (currentTime - fpsLastTime >= 1000) {
+        fps = fpsCounter; // Set the current FPS to the number of frames in the last second
         fpsCounter = 0; // Reset the frame counter
+        fpsLastTime = currentTime; // Reset the time for the next second
     }
-
-    // Display FPS in the top-right corner
-    drawFPS();
-}
-// Function to display FPS on the canvas
-function drawFPS() {
-    const fpsText = `FPS: ${fps}`;
-    ctx.fillStyle = 'white'; // Set the color for the FPS text
-    ctx.font = '20px Arial'; // Set the font size and style
-    ctx.textAlign = 'right'; // Align the text to the right
-    ctx.fillText(fpsText, canvas.width - 10, 30); // Draw the FPS at the top-right corner
+	// text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white'
+	writeText(`FPS: ${fps}`, "top-right", {x: -8, y: 8}, 12);
 }
 
 function keepPlayerInBounds(margin = 20) {

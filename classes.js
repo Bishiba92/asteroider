@@ -1,5 +1,5 @@
 class Particle {
-			constructor(x, y, color, size, lifespan, direction) {
+			constructor(x, y, color, size, lifespan, direction, speedMod = 1) {
 				this.x = x;
 				this.y = y;
 				this.color = color;
@@ -8,6 +8,7 @@ class Particle {
 				this.life = this.lifespan;
 				this.direction = direction + (Math.random() - 0.5) * 0.2; // Slightly randomize the direction
 				this.speed = 1; // Default speed, to be modified by the explosion function
+				this.speed *= speedMod;
 			}
 
 			draw() {
@@ -113,6 +114,7 @@ class Particle {
 				this.x = x;
 				this.y = y;
 				this.speed = 2 + Math.random() * 2;
+				this.speed *= 1 + time * progressionSpeed;
 				this.scale = 1;
 				this.baseSize = 50;
 
@@ -185,6 +187,7 @@ class Particle {
                 this.x = x;
                 this.y = y;
                 this.speed = 2 + Math.random() * 2;
+					this.speed *= 1 + time * progressionSpeed;
             }
 			draw() {
 				ctx.fillStyle = 'gold';
