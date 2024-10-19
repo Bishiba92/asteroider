@@ -1,3 +1,5 @@
+const gameVersion = "1.0";
+
 const audioPlayer = new AudioPlayer();
 audioPlayer.preloadMusic(['bgm1']);
 audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
@@ -13,6 +15,11 @@ playerShieldImage.src = 'shield.png';
 
 const playerShieldGlowImage = new Image();
 playerShieldGlowImage.src = 'shieldGlow.png';
+
+let lastFrameTime = performance.now(); // Track the time of the last frame
+let fps = 0; // Store the current FPS
+
+let progressionSpeed = 0.00005;
   
 
 const canvas = document.getElementById('gameCanvas');
@@ -29,7 +36,7 @@ const canvas = document.getElementById('gameCanvas');
         let player = {
             x: canvas.width / 2,
             y: canvas.height - 60,
-			radius: 20,
+			radius: 35,
 			scale: 0.4,
             width: 30,
             height: 30,
@@ -113,7 +120,7 @@ const canvas = document.getElementById('gameCanvas');
 			this.rotationAngle = Math.random() * 360 - 180; // Initial rotation angle
 
 			this.speed = 2 + Math.random() * 2;
-			this.speed *= 1 + time * 0.00001;
+			this.speed *= 1 + time * progressionSpeed;
 			this.isActive = true;
 		}
 
@@ -155,19 +162,10 @@ const canvas = document.getElementById('gameCanvas');
 			// Calculate the radius of the asteroid using the larger of width or height
 			const asteroidRadius = Math.max(this.width, this.height) / 2;
 
-			// Debug logging
-			console.log("Asteroid Center:", asteroidCenterX, asteroidCenterY);
-			console.log("Player Position:", object.x, object.y);
-			console.log("Distance:", distance);
-			console.log("Asteroid Radius:", asteroidRadius);
-			console.log("Player Radius:", object.radius);
-
 			// Check for collision
 			if (distance <= object.radius + asteroidRadius) {
-				console.log('Collision detected');
 				return true; // Collision detected
 			}
-			console.log('No collision detected');
 			return false; // No collision
 		}
 
@@ -389,19 +387,15 @@ const canvas = document.getElementById('gameCanvas');
         }
 
         function createShield() {
-            if (Math.random() < 0.001) { // 5% chance of spawning
-                const x = Math.random() * (canvas.width - 30);
-                const y = -30;
-                shields.push(new Shield(x, y));
-            }
+            const x = Math.random() * (canvas.width - 30);
+			const y = -30;
+			shields.push(new Shield(x, y));
         }
 
         function createGoldStar() {
-            if (Math.random() < 0.004) { // 3% chance of spawning
-                const x = Math.random() * (canvas.width - 30);
-                const y = -30;
-                goldStars.push(new GoldStar(x, y));
-            }
+            const x = Math.random() * (canvas.width - 30);
+			const y = -30;
+			goldStars.push(new GoldStar(x, y));
         }
 
         function drawShields() {
@@ -479,6 +473,7 @@ const canvas = document.getElementById('gameCanvas');
 				audioPlayer.playSFX('explosion1');
                 if (player.shields === 0) {
                     isGameOver = true;
+					endJoystick();
 					createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
 					audioPlayer.playSFX('gameover');
 					timeScale = 0.01;
@@ -532,7 +527,7 @@ const canvas = document.getElementById('gameCanvas');
             stars.forEach(star => {
                 ctx.fillRect(star.x, star.y, 2, 2);
 				let speed = star.speed;
-				speed *= 1 + time * 0.00001
+				speed *= 1 + time * progressionSpeed;
                 star.y += speed * timeScale;
                 if (star.y > canvas.height) {
                     star.y = 0;
@@ -561,20 +556,43 @@ const canvas = document.getElementById('gameCanvas');
 			}
 		}
 		
-		function writeText(text, x, y, fontSize = 30, color = 'white', align = 'left') {
-			ctx.fillStyle = color;                      // Set the color for the text
-			ctx.font = `${fontSize}px Arial`;           // Set the font size and font family
+		function writeText(text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white') {
+			const canvasWidth = ctx.canvas.width;     // Get canvas width
+			const canvasHeight = ctx.canvas.height;   // Get canvas height
+			ctx.fillStyle = color;                    // Set the color for the text
+			ctx.font = `${fontSize}px Arial`;         // Set the font size and font family
 			const textWidth = ctx.measureText(text).width; // Measure the width of the text
+			const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
 
-			// Adjust the x position based on the alignment
-			if (align === 'center') {
-				x = x - textWidth / 2;  // Center align by moving x to the left by half the text width
-			} else if (align === 'right') {
-				x = x - textWidth;  // Right align by moving x to the left by the full text width
+			let x = 0;
+			let y = 0;
+
+			// Handle horizontal anchor points
+			if (anchor.includes('left')) {
+				x = 0;
+			} else if (anchor.includes('center')) {
+				x = canvasWidth / 2 - textWidth / 2;
+			} else if (anchor.includes('right')) {
+				x = canvasWidth - textWidth;
 			}
 
-			ctx.fillText(text, x, y);                   // Write the text at the specified (x, y) coordinates
+			// Handle vertical anchor points
+			if (anchor.includes('top')) {
+				y = textHeight;  // Start at text height since y refers to the baseline
+			} else if (anchor.includes('center')) {
+				y = canvasHeight / 2 + textHeight / 2;
+			} else if (anchor.includes('bottom')) {
+				y = canvasHeight - textHeight / 4;  // Adjust to leave some space for descenders
+			}
+
+			// Apply offsets to x and y
+			x += offset.x;
+			y += offset.y;
+
+			// Draw the text on the canvas
+			ctx.fillText(text, x, y);
 		}
+
 		function drawRemainingShields() {
 			const iconSize = 40; // Size of the shield icons
 			const iconSpacing = 10; // Spacing between the shield icons
@@ -598,20 +616,26 @@ const canvas = document.getElementById('gameCanvas');
 		}
 
 
-		let gameoverMessage = "Game Over! Press R to Restart";
+		let gameoverMessage = "Game Over!";
+		let restartMessage = "Press R or tap to Restart";
+		
         function draw() {
 			drawBackground();
+			if (isGameOver) drawPlayer();
 			updateParticles();
 			drawObstacles();
 			drawShields();
 			drawGoldStars();
-			drawPlayer();
+			if (!isGameOver) drawPlayer();
 			drawShieldCircle();
 			drawRemainingShields();
-			writeText(score, 35, 120);
+			if (!isGameOver) writeText(score, "top-left", {x:35, y:80}, 30, "yellow");
 
 			if (isGameOver) {
-				writeText(gameoverMessage, canvas.width / 2, canvas.height / 2, 30, "red", "center");
+				writeText(gameoverMessage, "center", {x: 0, y: -50}, 30, "red", "center");
+				writeText(`Final score: ${score}`, "center", {x: 0, y: 0}, 30, "yellow", "center");
+				writeText(restartMessage, "center", {x: 0, y: 50}, 30, "green", "center");
+				writeText(`version: ${gameVersion}`, "bottom-right", {x: 0, y: 0}, 24, "white", "center");
 			}
 
 			// Draw the joystick if active
@@ -627,24 +651,43 @@ const canvas = document.getElementById('gameCanvas');
 			updatePlayerFromJoystick();
 
 			draw();
+
 			if (!isGameOver) {
 				time++;
-				if (time % 30 == 0) score++;
+				if (time % (Math.floor(30 / timeScale)) == 0) score += 1 + Math.floor(time * progressionSpeed);
+				if (time % (Math.floor(200 / timeScale)) == 0) createGoldStar();
+				if (time % (Math.floor(1000 / timeScale)) == 0) createShield();
 				immortalTimer();
-				if (time % 3000 == 0) createObstacle();
+				if (time % (Math.floor(3000 / timeScale)) == 0) createObstacle();
 				checkCollision();
 				updatePlayerPosition();
 				createParticles();
-				createShield();
-				createGoldStar();
+				
 
 				// Draw virtual joystick (if active)
 				drawJoystick();
 			}
-			
+
+			// Calculate FPS
+			const now = performance.now(); // Get the current time
+			const delta = now - lastFrameTime; // Time difference from the last frame
+			if (time % 15 == 0) fps = Math.round(1000 / delta); // FPS calculation
+			lastFrameTime = now; // Update the last frame time
+
+			// Display FPS in the top-right corner
+			drawFPS();
+
 			requestAnimationFrame(gameLoop);
 		}
 
+		function drawFPS() {
+			const fpsText = `FPS: ${fps}`;
+			ctx.fillStyle = 'white'; // Set the color for the FPS text
+			ctx.font = '20px Arial'; // Set the font size and style
+			ctx.textAlign = 'right'; // Align the text to the right
+			ctx.fillText(fpsText, canvas.width - 10, 30); // Draw the FPS at the top-right corner
+		}
+		
 		function keepPlayerInBounds(margin = 20) {
 			// Ensure the player's x position doesn't go outside the canvas
 			if (player.x - margin < 0) {
