@@ -12,20 +12,21 @@ window.addEventListener('gamepaddisconnected', () => {
     gamepadIndex = null;
 });
 
-// Update gamepad inputs
+// Handle gamepad input in the menu
 function handleGamepadInput() {
     if (gamepadIndex !== null) {
         let gamepad = navigator.getGamepads()[gamepadIndex];
 
-        // Get the left analog stick values (axes[0] = left-right, axes[1] = up-down)
-        let leftX = gamepad.axes[0];
+        if (gamepad.buttons[0].pressed) { // A button or X (on PS controllers)
+            handleMenuSelection(); // Select current option
+        }
+
         let leftY = gamepad.axes[1];
 
-        // Apply deadzone for stick drift
-        if (Math.abs(leftX) > 0.1 || Math.abs(leftY) > 0.1) {
-            // Apply movement
-            player.x += leftX * player.speed * timeScale;
-            player.y += leftY * player.speed * timeScale;
+        if (leftY < -0.5) { // Navigate up
+            selectedMenuOption = (selectedMenuOption - 1 + menuOptions.length) % menuOptions.length;
+        } else if (leftY > 0.5) { // Navigate down
+            selectedMenuOption = (selectedMenuOption + 1) % menuOptions.length;
         }
     }
 }
