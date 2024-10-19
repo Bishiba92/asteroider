@@ -1,4 +1,4 @@
-const gameVersion = "1.0";
+const gameVersion = "1.01";
 
 const audioPlayer = new AudioPlayer();
 audioPlayer.preloadMusic(['bgm1']);
@@ -25,15 +25,50 @@ let fpsLastTime = performance.now(); // Track the last time we calculated the FP
 
 let progressionSpeed = 0.0006; // How much faster the game gets as the game progresses
 
+let objectDensity = 400; // Change this to change density of spawning objects (Currently only affects asteroids)
+let objectSpawnTimer = 0; // Changing this value has no bearing on the game, it is set by other factors
+let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing on the game, it is set by other factors
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${this.size} "Press Start 2P"`;
 
+let time = 0;
+let timeScale = 1;
+
+let randomSeed = 4612;
+function simpleRNG(iteration, seed, min, max) {
+    // Some arbitrary prime numbers for better distribution
+    const state = iteration * 74755 + seed * 65933;
+
+    // Get the random int using Xorshift
+    const randomInt = xorshift(state);
+
+    // Normalize to [0, 1)
+    const value = randomInt / 0xFFFFFFFF;
+
+    // Scale the result to [min, max)
+    return value * (max - min) + min;
+}
+
+// Implementing Xorshift (32-bit variant)
+function xorshift(state) {
+    let x = Math.floor(state); // Convert to integer for bitwise operations
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    return x >>> 0; // Convert back to unsigned 32-bit integer
+}
+
+function getRandom() {
+	return simpleRNG(time, randomSeed, 0, 1);
+}
+
 function resizeCanvasToWindow() {
     const canvas = document.getElementById('gameCanvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    objectSpawnRateByWidthOfScreen = objectDensity / canvas.width
 }
 resizeCanvasToWindow();
 addJoystickToCanvas(canvas);
@@ -63,8 +98,6 @@ let shields = [];
 let goldStars = [];
 let score = 0;
 let isGameOver = false;
-let time = 0;
-let timeScale = 1;
 const keysPressed = {};
 
 function drawPlayer() {
@@ -116,13 +149,13 @@ function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifet
 function createParticles() {
     let intensity = keysPressed['ArrowUp'] || keysPressed['w'] ? 25 : keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['ArrowRight'] || keysPressed['d'] ? 5 : 2;
     intensity *= timeScale * timeScale;
-	 intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
+    intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
         let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
         let size = Math.random() * 2 + 1;
         let xOffset = Math.random() * 10 - 5;
         let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
-		  let speedMod = (1 + time * progressionSpeed) * (1 + Math.random() * 2);
+        let speedMod = (1 + time * progressionSpeed) * (1 + Math.random() * 2);
         particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction, speedMod));
     }
 }
@@ -137,7 +170,7 @@ function updateParticles() {
 
 function createObstacle() {
     const x = Math.random() * (canvas.width - 30);
-    const y = -30;
+    const y = -150;
     const obstacle = new Obstacle(x, y);
     obstacles.push(obstacle);
 }
@@ -208,12 +241,18 @@ function drawMainMenu() {
 
     ctx.save();
     ctx.globalAlpha = titleOpacity; // Apply the opacity for the title
-    writeText("Asteroider", "top-center", { x: 0, y: titleY }, 60, "white");
+    writeText("Asteroider", "top-center", {
+        x: 0,
+        y: titleY
+    }, 60, "white");
     ctx.restore();
 
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < menuOptions.length; i++) {
-        writeText(menuOptions[i], "center", { x: 0, y: i * 60 }, 40, selectedMenuOption === i ? "yellow" : "white");
+        writeText(menuOptions[i], "center", {
+            x: 0,
+            y: i * 60
+        }, 40, selectedMenuOption === i ? "yellow" : "white");
     }
 }
 
@@ -366,11 +405,11 @@ function drawBackground() {
 }
 
 function createStars() {
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 200; i++) {
         stars.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            speed: Math.random() * 2 + 1
+            x: Math.random(i) * canvas.width,
+            y: Math.random(i) * canvas.height,
+            speed: Math.random(i) * 2 + 1
         });
     }
 }
@@ -385,7 +424,10 @@ function immortalTimer() {
     }
 }
 
-function writeText(text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white') {
+function writeText(text, anchor, offset = {
+        x: 0,
+        y: 0
+    }, fontSize = 30, color = 'white') {
     const canvasWidth = ctx.canvas.width; // Get canvas width
     const canvasHeight = ctx.canvas.height; // Get canvas height
     ctx.fillStyle = color; // Set the color for the text
@@ -484,6 +526,14 @@ function draw() {
         }, 24, "white", "center");
     }
 
+    writeText(`Spawn Density: ${objectSpawnRateByWidthOfScreen.toFixed("3")}`, "top-right", {
+        x: -8,
+        y: 28
+    }, 12);
+    writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
+        x: -8,
+        y: 28 * 2
+    }, 12);
     // Draw the joystick if active
     drawJoystick();
 }
@@ -523,11 +573,18 @@ function gameLoop(currentTime) {
 function updateGame() {
     if (!isGameOver) {
         time++;
-        if (time % (Math.floor(30 / timeScale)) == 0) score += 1 + Math.floor(time * progressionSpeed);
-        if (time % (Math.floor(200 / timeScale)) == 0) createGoldStar();
-        if (time % (Math.floor(1000 / timeScale)) == 0) createShield();
+        if (time % (Math.floor(30 / timeScale)) == 0)
+            score += 1 + Math.floor(time * progressionSpeed);
+        if (time % (Math.floor(200 / timeScale)) == 0)
+            createGoldStar();
+        if (time % (Math.floor(1000 / timeScale)) == 0)
+            createShield();
+        objectSpawnTimer = Math.max(30 - Math.floor(time / 300), 10);
+        if (time % (Math.floor(objectSpawnTimer * objectSpawnRateByWidthOfScreen / timeScale)) == 0)
+            createObstacle();
         immortalTimer();
-        if (time % (Math.floor(3000 / timeScale)) == 0) createObstacle();
+        if (time % (Math.floor(3000 / timeScale)) == 0)
+            createObstacle();
         checkCollision();
         updatePlayerPosition();
         createParticles();
@@ -543,8 +600,11 @@ function calculateAndDisplayFPS(currentTime) {
         fpsCounter = 0; // Reset the frame counter
         fpsLastTime = currentTime; // Reset the time for the next second
     }
-	// text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white'
-	writeText(`FPS: ${fps}`, "top-right", {x: -8, y: 8}, 12);
+    // text, anchor, offset = {x: 0, y: 0}, fontSize = 30, color = 'white'
+    writeText(`FPS: ${fps}`, "top-right", {
+        x: -8,
+        y: 8
+    }, 12);
 }
 
 function keepPlayerInBounds(margin = 20) {
@@ -566,7 +626,7 @@ function keepPlayerInBounds(margin = 20) {
 let restartInt = 0;
 // Start the game function
 function startGame() {
-	 audioPlayer.playMusic("bgm1");
+    audioPlayer.playMusic("bgm1");
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
@@ -585,7 +645,8 @@ function startGame() {
     stars = [];
     particles = [];
     createStars();
-    for (let i = 0; i < 5; i++) createObstacle();
+    player.x = canvas.width / 2;
+    player.y = canvas.height / 2;
     gameLoop();
 }
 

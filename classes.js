@@ -71,7 +71,6 @@ class Particle {
 
 			// Check if obstacle moves off the screen
 			if (this.y > canvas.height && this.isActive) {
-				createObstacle();
 				obstacles = obstacles.filter(item => item !== this);
 				this.isActive = false;
 			}
