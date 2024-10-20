@@ -60,7 +60,7 @@ async function updateLeaderboard(player, score) {
 
   try {
     console.log("Checking if score update is needed...");
-
+	getLeaderboard();
     // Get the current player's data (if exists)
     const docRef = firebaseDatabase.doc(`${collectionName}/${docId}`);
     const docSnapshot = await docRef.get();

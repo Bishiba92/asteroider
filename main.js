@@ -534,7 +534,7 @@ function handleMenuSelection(fromClick = false) {
         startGame(); // Start the game
         isMainMenu = false; // Exit the menu
     } else if (selectedMenuOption === 1) {
-			showOptions();
+			isMobile ? showLeaderboard() : showOptions();
 			optionCooldown()
     } else if (selectedMenuOption === 2) {
 			showLeaderboard();
@@ -570,6 +570,7 @@ function drawOptionsMenu() {
 
 function handleGameOptionsSelection(fromClick = false) {
 	if (isSelectOnCooldown()) return;
+	
     if (enter && selectedGameOption === 0) {
         audioPlayer.toggleMuteAll();
 		optionCooldown();
@@ -762,7 +763,7 @@ function drawGameTestTexts() {
 
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
-	isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+	isMobile = 'ontouchstart' in window;
 	fontScale = isMobile ? 0.6 : 1;
     if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) {
         console.log("Trying to play music");
