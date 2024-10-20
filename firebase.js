@@ -60,19 +60,14 @@ async function updateLeaderboard(player, score) {
 
   try {
     console.log("Checking if score update is needed...");
-	getLeaderboard();
-    // Get the current player's data (if exists)
-    const docRef = firebaseDatabase.doc(`${collectionName}/${docId}`);
-    const docSnapshot = await docRef.get();
-    
-    let currentData = null;
 
-    if (docSnapshot.exists) {
-      const leaderboardData = docSnapshot.data();
-      currentData = leaderboardData[fieldName];
-    }
+    // Retrieve the latest leaderboard to ensure it's up to date locally
+    await getLeaderboard();  // Fetches and updates the local `leaderboard` variable
 
-    // Check if the player already has a score
+    // Get the current player's data from the local leaderboard
+    let currentData = leaderboard.find(entry => entry.name === player.name);
+
+    // Check if the player already has a score in the leaderboard
     if (currentData && currentData.score >= score) {
       // If the current score is greater than or equal to the new score, don't update
       console.log("Player already has a higher or equal score, no update required.");
@@ -82,14 +77,30 @@ async function updateLeaderboard(player, score) {
     // If no score exists or the new score is higher, update the leaderboard
     console.log("New high score! Updating leaderboard...");
 
+    // Update Firestore with the new score and ship
     const newValue = { score: score, ship: player.ship };
-	currentRecord = score;
     await setField(collectionName, docId, fieldName, newValue);
-	
+
+    // Immediately update the local leaderboard with the new score
+    if (currentData) {
+      // If player exists in the leaderboard, update their score and ship
+      currentData.score = score;
+      currentData.ship = player.ship;
+    } else {
+      // If player doesn't exist, add a new entry to the local leaderboard
+      leaderboard.push({ name: player.name, score: score, ship: player.ship });
+    }
+
+    // Sort the local leaderboard after updating
+    leaderboard.sort((a, b) => b.score - a.score);
+
+    console.log("Local leaderboard updated:", leaderboard);
+
   } catch (error) {
     console.error("Error updating leaderboard: ", error);
   }
 }
+
 
 async function getRecord(playerName) {
   const collectionName = "leaderboard";

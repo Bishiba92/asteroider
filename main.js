@@ -35,7 +35,15 @@ let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing o
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${this.size} "Press Start 2P"`;
+canvas.addEventListener('mousemove', function (event) {
+        // Get the bounding rectangle of the canvas
+        const rect = canvas.getBoundingClientRect();
 
+        // Update the mouse position relative to the canvas
+        mousePosition.x = event.clientX - rect.left;
+        mousePosition.y = event.clientY - rect.top;
+    });
+	
 let fontScale = 1;
 
 let time = 0;
@@ -727,7 +735,7 @@ function drawGame() {
         writeText(`version: ${gameVersion}`, "bottom-right", {
             x: 0,
             y: 0
-        }, 24, "white", "center");
+        }, 18, "white");
 		drawLeaderboard();
     }
 
@@ -761,11 +769,12 @@ function drawGameTestTexts() {
     }, 12);
 }
 
+let startMusicInt = 0;
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
 	isMobile = 'ontouchstart' in window;
 	fontScale = isMobile ? 0.6 : 1;
-    if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) {
+    if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
         console.log("Trying to play music");
         audioPlayer.nextMusic();
     }
@@ -775,7 +784,7 @@ function gameLoop(currentTime) {
     // If enough time has passed since the last frame (based on the FPS cap)
     if (elapsedTime > fpsInterval) {
 		selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
-		trackMousePosition(canvas);
+		
         // Adjust for any slight time deviation
         lastFrameTime = currentTime - (elapsedTime % fpsInterval);
 
@@ -991,6 +1000,7 @@ function drawModal() {
 	let displayText = inputStr;
 	if (allCaps) displayText = displayText.toUpperCase();
 	writeText(displayText.padEnd(maxTextInput, '_'), 'center', {x: 0, y: 0}, 24, "yellow");
+	writeText("For online leaderboard", 'center', {x: 0, y: 50}, 14);
 }
 
 function openInputModal(text, maxInput = 8, allCaps = true) {
@@ -1185,17 +1195,5 @@ canvas.addEventListener('mouseup', function () {
 canvas.addEventListener('mouseleave', function () {
     isClicking = false;
 });
-
-function trackMousePosition(canvas) {
-    canvas.addEventListener('mousemove', function (event) {
-        // Get the bounding rectangle of the canvas
-        const rect = canvas.getBoundingClientRect();
-
-        // Update the mouse position relative to the canvas
-        mousePosition.x = event.clientX - rect.left;
-        mousePosition.y = event.clientY - rect.top;
-    });
-}
-
 
 setPlayerName();
