@@ -1,4 +1,4 @@
-const gameVersion = "1.01";
+const gameVersion = "1.02";
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 
@@ -620,6 +620,10 @@ function drawGameTestTexts() {
 	let i = 1;
 	let rowHeight = 24;
 	let yOffset = 10;
+	writeText(`Version: ${gameVersion}`,"top-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 12);
 	writeText(`Spawn Density: ${objectSpawnRateByWidthOfScreen.toFixed("3")}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
