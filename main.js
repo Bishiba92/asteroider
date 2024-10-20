@@ -1,5 +1,5 @@
-const gameVersion = "1.02";
-const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const gameVersion = "1.03";
+let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 
 
@@ -36,6 +36,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${this.size} "Press Start 2P"`;
 
+let fontScale = 1;
 
 let time = 0;
 let timeScale = 1;
@@ -90,7 +91,8 @@ let player = {
     isImmortal: false,
     immortalTime: 0,
     hasShield: false,
-    selectedShipImage: shipImages[0]
+    selectedShipImage: shipImages[0],
+	ship: "Falcon"
 };
 
 player.selectedShipImage = shipImages[Math.floor(Math.random() * shipImages.length)];
@@ -129,12 +131,12 @@ function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifet
     }
 }
 function createParticles() {
-    let intensity = up ? 25 : left || right ? 5 : 2;
+    let intensity = up ? 4 : left || right ? 3 : 1;
     intensity *= timeScale * timeScale;
     intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
-        let color = ['#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
-        let size = Math.random() * 2 + 1;
+        let color = ['#00FFFF','#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
+        let size = Math.random() * 1 + 0.5;
         let xOffset = Math.random() * 10 - 5;
         let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
         let speedMod = (1 + time * progressionSpeed) * (1 + Math.random() * 2);
@@ -255,6 +257,11 @@ function checkCollision() {
         }
     });
 }
+let leaderboard = [];
+let currentRecord = 0;
+async function setCurrentRecord() {
+	currentRecord = await getRecord(player.name);
+}
 
 function handleCollision(obstacle, index) {
     if (player.shields > 0) {
@@ -272,6 +279,7 @@ function handleCollision(obstacle, index) {
             createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
             audioPlayer.playSFX('gameover');
             timeScale = 0.03;
+				updateLeaderboard(player, score)
 
             canvas.removeEventListener('mousedown', startJoystick);
             canvas.removeEventListener('touchstart', startJoystick);
@@ -352,36 +360,37 @@ function immortalTimer() {
     }
 }
 
-function writeText(text, anchor, offset = {
-        x: 0,
-        y: 0
-    }, fontSize = 30, color = 'white') {
-    const canvasWidth = ctx.canvas.width; // Get canvas width
-    const canvasHeight = ctx.canvas.height; // Get canvas height
-    ctx.fillStyle = color; // Set the color for the text
-    ctx.font = `${fontSize}px "Press Start 2P"`; // Set the font size and font family
-    const textWidth = ctx.measureText(text).width; // Measure the width of the text
-    const textHeight = fontSize; // Simplified approximation of text height (based on font size)
+function writeText(text, anchor, offset = { x: 0, y: 0 }, fontSize = 30, color = 'white', align) {
+    fontSize *= fontScale;
+    const canvasWidth = ctx.canvas.width;  // Get canvas width
+    const canvasHeight = ctx.canvas.height;  // Get canvas height
+    ctx.fillStyle = color;  // Set the color for the text
+    ctx.font = `${fontSize}px "Press Start 2P"`;  // Set the font size and font family
+
+    const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
 
     let x = 0;
     let y = 0;
 
-    // Handle horizontal anchor points
+    // Handle horizontal anchor points and set default alignment
     if (anchor.includes('left')) {
         x = 0;
+        ctx.textAlign = align || "left";
     } else if (anchor.includes('center')) {
-        x = canvasWidth / 2 - textWidth / 2;
+        x = canvasWidth / 2;
+        ctx.textAlign = align || "center";
     } else if (anchor.includes('right')) {
-        x = canvasWidth - textWidth;
+        x = canvasWidth;
+        ctx.textAlign = align || "right";
     }
 
-    // Handle vertical anchor points
+    // Handle vertical anchor points (manually position y)
     if (anchor.includes('top')) {
-        y = textHeight; // Start at text height since y refers to the baseline
+        y = textHeight;  // Start at text height since y refers to the baseline
     } else if (anchor.includes('center')) {
         y = canvasHeight / 2 + textHeight / 2;
     } else if (anchor.includes('bottom')) {
-        y = canvasHeight - textHeight / 4; // Adjust to leave some space for descenders
+        y = canvasHeight - textHeight / 4;  // Adjust to leave some space for descenders
     }
 
     // Apply offsets to x and y
@@ -391,6 +400,8 @@ function writeText(text, anchor, offset = {
     // Draw the text on the canvas
     ctx.fillText(text, x, y);
 }
+
+
 
 function drawRemainingShields() {
     const iconSize = 40; // Size of the shield icons
@@ -462,7 +473,29 @@ canvas.addEventListener('click', function (event) {
             const optionY = canvas.height / 2 + i * 60;
             if (clickY > optionY - 20 && clickY < optionY + 20) {
                 selectedMenuOption = i;
-                handleMenuSelection();
+					switch (whatToDraw) {
+						case "Main": {
+								handleMenuSelection(true);
+								break;
+							}
+						case "Game": {
+								//handleGameOptionsSelection(true);
+								break;
+							}
+							case "Options": {
+								handleGameOptionsSelection(true);
+								break;
+							}
+							case "Leaderboard": {
+								handleLeaderboardSelection(true);
+								break;
+							}
+							case "NameInput": {
+								break;
+							}
+							
+						}
+				
             }
         }
     }
@@ -493,9 +526,9 @@ function changeMenuOption(menuOptions, selectedMenuOption){
 	return selectedMenuOption;
 };
 // Handle menu selection based on current option
-function handleMenuSelection() {
+function handleMenuSelection(fromClick = false) {
 	if (isSelectOnCooldown()) return;
-	if (enter) {
+	if (enter || fromClick) {
     if (selectedMenuOption === 0) {
 		optionCooldown()
         startGame(); // Start the game
@@ -534,7 +567,8 @@ function drawOptionsMenu() {
         }, 40, selectedGameOption === i ? "yellow" : "white");
     }
 }
-function handleGameOptionsSelection() {
+
+function handleGameOptionsSelection(fromClick = false) {
 	if (isSelectOnCooldown()) return;
     if (enter && selectedGameOption === 0) {
         audioPlayer.toggleMuteAll();
@@ -546,7 +580,7 @@ function handleGameOptionsSelection() {
 			} else if (right) {
 				optionCooldown();
 				audioPlayer.changeVolume("music", 0.1);
-			}
+			} 
     } else if (selectedGameOption === 2) {
 			if (left) {
 				optionCooldown();
@@ -557,6 +591,101 @@ function handleGameOptionsSelection() {
 			}
     }
 	if (esc) {
+		optionCooldown();
+		showMainMenu();
+	}	
+}
+
+function drawLeaderboard() {
+  if (leaderboard.length === 0) {
+    console.log("No leaderboard data available to draw.");
+    return;
+  }
+
+  ctx.save();
+  let titleY = 50;
+
+  // Draw the title for the leaderboard
+  let titleText = isGameOver ? "Gameover!" : "Leaderboard";
+  let titleColor = isGameOver ? "red" : "yellow";
+  writeText(titleText, "top-center", {
+    x: 0,
+    y: titleY
+  }, 60, titleColor);
+
+  ctx.restore();
+
+  // Set the starting Y position for the leaderboard items
+  let startY = isMobile ? titleY + 100 : titleY + 140; // Some space below the title
+
+  // Calculate column positions based on canvas width for dynamic alignment
+  let canvasWidth = canvas.width;
+  
+  let col0Start = canvasWidth * 0.2;  // Rank column (10% of the canvas width)
+  let col1Start = canvasWidth * 0.23;  // Name column (20% of the canvas width)
+  let col2Start = canvasWidth * 0.5;  // Ship column (50% of the canvas width)
+  let col3Start = canvasWidth * 0.8;  // Score column (80% of the canvas width)
+
+  let rowHeight = isMobile ? 20 : 25;  // Adjust row height for better readability
+  let fontSize = 20;
+  let color = "white";
+
+  // Track if the player is part of the top 25
+  let playerInTop25 = false;
+	let subtitle = isGameOver ? `Final score: ${score}` : "Leaderboard entries: " + leaderboard.length;
+  writeText(subtitle, "top-center", { x: 0, y: startY - rowHeight * 2 }, fontSize, "yellow");
+
+  // Draw the top 25 leaderboard entries
+  for (let i = 0; i < Math.min(25, leaderboard.length); i++) {
+    const entry = leaderboard[i];
+    const rank = i + 1;
+
+    // Highlight current player's entry in yellow
+    if (entry.name === player.name) {
+      color = "yellow";
+      playerInTop25 = true;
+    } else {
+      color = "white";
+    }
+
+    // Draw the text for each entry, align columns dynamically based on the canvas width
+    writeText(rank + ".", "left", { x: col0Start, y: startY + i * rowHeight }, fontSize, color, "right");
+    writeText(entry.name, "left", { x: col1Start, y: startY + i * rowHeight }, fontSize, color, "left");
+    writeText(entry.ship, "left", { x: col2Start, y: startY + i * rowHeight }, fontSize, color, "left");
+    writeText(entry.score, "left", { x: col3Start, y: startY + i * rowHeight }, fontSize, color, "right");
+  }
+
+  // If the player is not in the top 25, display them at the bottom with their correct rank
+  if (!playerInTop25) {
+    // Find the player's position in the leaderboard
+    const playerIndex = leaderboard.findIndex(entry => entry.name === player.name);
+
+    if (playerIndex !== -1) {
+      const playerEntry = leaderboard[playerIndex];
+      const playerRank = playerIndex + 1;  // Player rank is their index + 1
+
+      // Add some extra space to place the player's entry below the top 25
+      const playerY = startY + 26 * rowHeight; // Place player's entry one row below the top 25
+
+      // Draw the player's entry with the correct rank
+      writeText(playerRank + ".", "left", { x: col0Start, y: playerY }, fontSize, "yellow", "right");
+      writeText(playerEntry.name, "left", { x: col1Start, y: playerY }, fontSize, "yellow", "left");
+      writeText(playerEntry.ship, "left", { x: col2Start, y: playerY }, fontSize, "yellow", "left");
+      writeText(playerEntry.score, "left", { x: col3Start, y: playerY }, fontSize, "yellow", "right");
+    }
+  }
+  if (isGameOver) {
+	  writeText(restartMessage, "top-center", {
+            x: 0,
+            y: startY + 27 * rowHeight
+        }, 18, "green", "center");
+  }
+}
+
+
+function handleLeaderboardSelection(fromClick = false) {
+	if (isSelectOnCooldown()) return;
+	if (esc || fromClick) {
 		optionCooldown();
 		showMainMenu();
 	}	
@@ -594,22 +723,11 @@ function drawGame() {
         }, 30, "yellow");
 
     if (isGameOver) {
-        writeText(gameoverMessage, "center", {
-            x: 0,
-            y: -50
-        }, 30, "red", "center");
-        writeText(`Final score: ${score}`, "center", {
-            x: 0,
-            y: 0
-        }, 22, "yellow", "center");
-        writeText(restartMessage, "center", {
-            x: 0,
-            y: 50
-        }, 18, "green", "center");
         writeText(`version: ${gameVersion}`, "bottom-right", {
             x: 0,
             y: 0
         }, 24, "white", "center");
+		drawLeaderboard();
     }
 
     // Draw the joystick if active
@@ -624,7 +742,7 @@ function drawGameTestTexts() {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 12);
-	writeText(`Spawn Density: ${objectSpawnRateByWidthOfScreen.toFixed("3")}`, "top-right", {
+	writeText(`particles: ${particles.length}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 12);
@@ -644,8 +762,8 @@ function drawGameTestTexts() {
 
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
-	
-	
+	isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+	fontScale = isMobile ? 0.6 : 1;
     if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) {
         console.log("Trying to play music");
         audioPlayer.nextMusic();
@@ -663,7 +781,7 @@ function gameLoop(currentTime) {
         // Update and render the game
         resizeCanvasToWindow();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-			drawGameTestTexts()
+			
         switch (whatToDraw) {
         case "Main": {
 					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
@@ -688,7 +806,8 @@ function gameLoop(currentTime) {
                 break;
             }
 			case "Leaderboard": {
-                
+					handleLeaderboardSelection();
+                drawLeaderboard();				
                 break;
             }
 			case "NameInput": {
@@ -700,6 +819,7 @@ function gameLoop(currentTime) {
 
         // Calculate and display FPS
         calculateAndDisplayFPS(currentTime);
+		  //drawGameTestTexts();
     }
 }
 
@@ -769,6 +889,7 @@ function setupGame() {
     gameLoop();
 }
 function setPlayerName() {
+	getLeaderboard();
 	Managers.Cache.load("playerName").then(data => {
 		if (data != undefined) {
 			player.name = data.name;
@@ -778,6 +899,7 @@ function setPlayerName() {
 }
 function startGame() {
 	whatToDraw = "Game";
+	setCurrentRecord();
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
