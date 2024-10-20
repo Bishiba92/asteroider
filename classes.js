@@ -45,7 +45,7 @@ class Particle {
 			// Select a random asteroid image from asteroid0.png to asteroid9.png
 			const randomIndex = Math.floor(Math.random() * 10);
 			this.image = new Image();
-			this.image.src = `asteroid${randomIndex}.png`;
+			this.image.src = `img/asteroid${randomIndex}.png`;
 
 			// Set initial size and scale factor (randomized by ±5%)
 			this.baseSize = 50; // Example base size, you can adjust this
@@ -119,13 +119,13 @@ class Particle {
 
 				// Load the base shield, glow, and shine images
 				this.image = new Image();
-				this.image.src = 'shield.png'; // Base shield
+				this.image.src = 'img/shield.png'; // Base shield
 
 				this.glowImage = new Image();
-				this.glowImage.src = 'shieldGlow.png'; // Glowing overlay
+				this.glowImage.src = 'img/shieldGlow.png'; // Glowing overlay
 
 				this.shineImage = new Image();
-				this.shineImage.src = 'shieldShine.png'; // Extra feathered glow
+				this.shineImage.src = 'img/shieldShine.png'; // Extra feathered glow
 
 				// Default dimensions
 				this.width = this.baseSize * this.scale;

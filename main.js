@@ -1,5 +1,18 @@
 const gameVersion = "1.01";
 
+let mousePosition = { x: 0, y: 0 };  // Global variable to store the mouse position
+
+function trackMousePosition(canvas) {
+    canvas.addEventListener('mousemove', function(event) {
+        // Get the bounding rectangle of the canvas
+        const rect = canvas.getBoundingClientRect();
+
+        // Update the mouse position relative to the canvas
+        mousePosition.x = event.clientX - rect.left;
+        mousePosition.y = event.clientY - rect.top;
+    });
+}
+
 const audioPlayer = new AudioPlayer();
 audioPlayer.preloadMusic(['bgm1']);
 audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
@@ -7,14 +20,14 @@ audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
 // audioPlayer.playSFX('sfx1');
 // audioPlayer.playBGS('bgs1');
 const shipImages = [new Image(), new Image()];
-shipImages[0].src = 'ship0.png';
-shipImages[1].src = 'ship1.png';
+shipImages[0].src = 'img/ship0.png';
+shipImages[1].src = 'img/ship1.png';
 
 const playerShieldImage = new Image();
-playerShieldImage.src = 'shield.png';
+playerShieldImage.src = 'img/shield.png';
 
 const playerShieldGlowImage = new Image();
-playerShieldGlowImage.src = 'shieldGlow.png';
+playerShieldGlowImage.src = 'img/shieldGlow.png';
 
 let fpsCap = 60; // Target FPS
 let fpsInterval = 1000 / fpsCap; // Calculate the time interval between frames for the target FPS
@@ -25,13 +38,27 @@ let fpsLastTime = performance.now(); // Track the last time we calculated the FP
 
 let progressionSpeed = 0.0006; // How much faster the game gets as the game progresses
 
-let objectDensity = 400; // Change this to change density of spawning objects (Currently only affects asteroids)
+let objectDensity = 800; // Change this to change density of spawning objects (Currently only affects asteroids)
 let objectSpawnTimer = 0; // Changing this value has no bearing on the game, it is set by other factors
 let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing on the game, it is set by other factors
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${this.size} "Press Start 2P"`;
+// Set isClicking to true when the mouse button is pressed
+    canvas.addEventListener('mousedown', function() {
+        isClicking = true;
+    });
+
+    // Set isClicking to false when the mouse button is released
+    canvas.addEventListener('mouseup', function() {
+        isClicking = false;
+    });
+
+    // Also reset isClicking if the mouse leaves the canvas
+    canvas.addEventListener('mouseleave', function() {
+        isClicking = false;
+    });
 
 let time = 0;
 let timeScale = 1;
@@ -515,11 +542,11 @@ function draw() {
         writeText(`Final score: ${score}`, "center", {
             x: 0,
             y: 0
-        }, 30, "yellow", "center");
+        }, 22, "yellow", "center");
         writeText(restartMessage, "center", {
             x: 0,
             y: 50
-        }, 30, "green", "center");
+        }, 18, "green", "center");
         writeText(`version: ${gameVersion}`, "bottom-right", {
             x: 0,
             y: 0
@@ -532,7 +559,11 @@ function draw() {
     }, 12);
     writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
         x: -8,
-        y: 28 * 2
+        y: 20 * 2
+    }, 12);
+	writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "top-right", {
+        x: -8,
+        y: 20 * 3
     }, 12);
     // Draw the joystick if active
     drawJoystick();
@@ -540,7 +571,12 @@ function draw() {
 
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
-
+	trackMousePosition(canvas);
+	if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) 
+	{
+		console.log("Trying to play music");
+		audioPlayer.nextMusic();
+	}
     // Calculate the time difference between the current frame and the last frame
     let elapsedTime = currentTime - lastFrameTime;
 
@@ -626,14 +662,13 @@ function keepPlayerInBounds(margin = 20) {
 let restartInt = 0;
 // Start the game function
 function startGame() {
-    audioPlayer.playMusic("bgm1");
+	audioPlayer.setMusicVolume(0.1)
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
 
     timeScale = 1;
-    audioPlayer.playMusic('bgm1');
     isGameOver = false;
     score = 0;
     time = 0;
