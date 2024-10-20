@@ -1,4 +1,4 @@
-const gameVersion = "1.03";
+const gameVersion = "1.04";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 
