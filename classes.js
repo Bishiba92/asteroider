@@ -58,7 +58,7 @@ class Particle {
 			this.rotationAngle = Math.random() * 360 - 180; // Initial rotation angle
 
 			this.speed = 2 + Math.random() * 2;
-			this.speed *= 1 + time * progressionSpeed;
+			this.speed *= timeMod;
 			this.isActive = true;
 		}
 
@@ -113,7 +113,7 @@ class Particle {
 				this.x = x;
 				this.y = y;
 				this.speed = 2 + Math.random() * 2;
-				this.speed *= 1 + time * progressionSpeed;
+				this.speed *= timeMod;
 				this.scale = 1;
 				this.baseSize = 50;
 
@@ -186,7 +186,7 @@ class Particle {
                 this.x = x;
                 this.y = y;
                 this.speed = 2 + Math.random() * 2;
-					this.speed *= 1 + time * progressionSpeed;
+					this.speed *= timeMod;
             }
 			draw() {
 				ctx.fillStyle = 'gold';

@@ -28,6 +28,7 @@ let fpsCounter = 0; // Number of frames rendered in the last second
 let fpsLastTime = performance.now(); // Track the last time we calculated the FPS
 
 let progressionSpeed = 0.0006; // How much faster the game gets as the game progresses
+let timeMod = 1;
 
 let objectDensity = 800; // Change this to change density of spawning objects (Currently only affects asteroids)
 let objectSpawnTimer = 0; // Changing this value has no bearing on the game, it is set by other factors
@@ -142,13 +143,13 @@ function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifet
 function createParticles() {
     let intensity = up ? 4 : left || right ? 3 : 1;
     intensity *= timeScale * timeScale;
-    intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
+    intensity *= timeMod * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
         let color = ['#00FFFF','#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
         let size = Math.random() * 1 + 0.5;
         let xOffset = Math.random() * 10 - 5;
         let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
-        let speedMod = (1 + time * progressionSpeed) * (1 + Math.random() * 2);
+        let speedMod = timeMod * (1 + Math.random() * 2);
         particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction, speedMod));
     }
 }
@@ -340,7 +341,7 @@ function drawBackground() {
     stars.forEach(star => {
         ctx.fillRect(star.x, star.y, 2, 2);
         let speed = star.speed;
-        speed *= 1 + time * progressionSpeed;
+        speed *= timeMod;
         star.y += speed * timeScale;
         if (star.y > canvas.height) {
             star.y = 0;
@@ -837,15 +838,23 @@ function gameLoop(currentTime) {
 				y: 0
 			}, 18, "white");
 		  }
+		  if (whatToDraw == "Game") {
+			  
+		  writeText(`timeMod: ${timeMod.toFixed(4)}`, "bottom-right", {
+				x: -3,
+				y: 0
+			}, 18, "white");
+		  }
     }
 }
 
 // Function to update the game (separated for clarity)
 function updateGame() {
+	 calculateTimeMod();
     if (!isGameOver) {
         time++;
         if (time % (Math.floor(30 / timeScale)) == 0)
-            score += 1 + Math.floor(time * progressionSpeed);
+            score += Math.floor(timeMod);
         if (time % (Math.floor(200 / timeScale)) == 0)
             createGoldStar();
         if (time % (Math.floor(1000 / timeScale)) == 0)
@@ -860,6 +869,16 @@ function updateGame() {
         updatePlayerPosition();
         createParticles();
     }
+}
+function calculateTimeMod() {
+    const maxValue = 7;
+    const minValue = 0;
+    const midpoint = 10000; // Time at which the curve is halfway
+    const k = 0.0002; // Controls the steepness of the curve
+
+    // Logistic growth formula
+    timeMod = minValue + (maxValue - minValue) / (1 + Math.exp(-k * (time - midpoint)));
+
 }
 // Function to calculate and display FPS
 function calculateAndDisplayFPS(currentTime) {
