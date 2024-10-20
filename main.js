@@ -1,4 +1,4 @@
-const gameVersion = "1.04";
+const gameVersion = "1.05";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 
@@ -827,8 +827,12 @@ function gameLoop(currentTime) {
         calculateAndDisplayFPS(currentTime);
 		  //drawGameTestTexts();
 		  if (whatToDraw != "Game") {
+			  writeText(`Bishiba @ Patreon`, "bottom-left", {
+				x: 3,
+				y: 0
+			}, 18, "white");
         writeText(`version: ${gameVersion}`, "bottom-right", {
-				x: 0,
+				x: -3,
 				y: 0
 			}, 18, "white");
 		  }
