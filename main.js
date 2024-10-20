@@ -1,4 +1,5 @@
 const gameVersion = "1.01";
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 
 
@@ -611,7 +612,6 @@ function drawGame() {
         }, 24, "white", "center");
     }
 
-    drawGameTestTexts();
     // Draw the joystick if active
     drawJoystick();
 }
@@ -632,7 +632,7 @@ function drawGameTestTexts() {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 12);
-	writeText(`Player speed: ${player.speed}`, "top-right", {
+	writeText(`Mobile: ${isMobile}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 12);
@@ -641,8 +641,7 @@ function drawGameTestTexts() {
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
 	
-	selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
-    trackMousePosition(canvas);
+	
     if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) {
         console.log("Trying to play music");
         audioPlayer.nextMusic();
@@ -652,13 +651,15 @@ function gameLoop(currentTime) {
 
     // If enough time has passed since the last frame (based on the FPS cap)
     if (elapsedTime > fpsInterval) {
+		selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
+		trackMousePosition(canvas);
         // Adjust for any slight time deviation
         lastFrameTime = currentTime - (elapsedTime % fpsInterval);
 
         // Update and render the game
         resizeCanvasToWindow();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+			drawGameTestTexts()
         switch (whatToDraw) {
         case "Main": {
 					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
