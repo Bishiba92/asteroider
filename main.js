@@ -107,6 +107,14 @@ let player = {
 
 player.selectedShipImage = shipImages[Math.floor(Math.random() * shipImages.length)];
 
+if (player.selectedShipImage.src.includes("ship0")) {
+    player.ship = "Falcon";
+} else if (player.selectedShipImage.src.includes("ship1")) {
+    player.ship = "Raven";
+} else if (player.selectedShipImage.src.includes("ship2")) {
+    player.ship = "Hawk";
+}
+
 let obstacles = [];
 let stars = [];
 let particles = [];
