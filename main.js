@@ -662,7 +662,7 @@ function keepPlayerInBounds(margin = 20) {
 let restartInt = 0;
 // Start the game function
 function startGame() {
-	audioPlayer.setMusicVolume(0.1)
+	audioPlayer.setMasterVolume(0.3)
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
