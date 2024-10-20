@@ -732,10 +732,6 @@ function drawGame() {
         }, 30, "yellow");
 
     if (isGameOver) {
-        writeText(`version: ${gameVersion}`, "bottom-right", {
-            x: 0,
-            y: 0
-        }, 18, "white");
 		drawLeaderboard();
     }
 
@@ -830,6 +826,12 @@ function gameLoop(currentTime) {
         // Calculate and display FPS
         calculateAndDisplayFPS(currentTime);
 		  //drawGameTestTexts();
+		  if (whatToDraw != "Game") {
+        writeText(`version: ${gameVersion}`, "bottom-right", {
+				x: 0,
+				y: 0
+			}, 18, "white");
+		  }
     }
 }
 
