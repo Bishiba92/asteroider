@@ -869,7 +869,7 @@ function drawModal() {
 function openInputModal(text, maxInput = 8, allCaps = true) {
     modalTextPrompt = text;
     inputStr = ''; // Initialize input string
-    
+
     // Check if we're on mobile by detecting if the platform is touch-based
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -885,9 +885,11 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
         hiddenInput.style.pointerEvents = 'none';  // Disable interactions
         hiddenInput.style.zIndex = '-1';  // Send it to the back of the stack
         document.body.appendChild(hiddenInput);
-
-        // Focus on the hidden input to trigger the mobile keyboard
-        hiddenInput.focus();
+        
+        // Focus on the hidden input if the user clicks on the canvas
+        canvas.addEventListener('click', () => {
+            hiddenInput.focus();
+        });
 
         // Sync hidden input with inputStr and handle mobile input
         hiddenInput.addEventListener('input', () => {
@@ -903,6 +905,7 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
             document.removeEventListener('keydown', handleKeyInput);
             if (isMobile && hiddenInput) {
                 document.body.removeChild(hiddenInput); // Clean up the hidden input for mobile
+                canvas.removeEventListener('click', handleCanvasClick); // Remove click listener
             }
             isModalActive = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -920,12 +923,22 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
         drawModal(); // Redraw the modal with the updated input
     }
 
-    // Listen for keyboard input (for PC and possibly fallback for mobile)
+    // Add the keyboard input listener (for PC or fallback)
     document.addEventListener('keydown', handleKeyInput);
 
-    // Initial draw
+    // Initial draw of the modal
     drawModal();
     whatToDraw = "NameInput"; // Set the drawing mode
+
+    // Helper function for canvas click
+    function handleCanvasClick() {
+        hiddenInput.focus();
+    }
+    
+    if (isMobile) {
+        // On mobile, focus on the input when the canvas is clicked
+        canvas.addEventListener('click', handleCanvasClick);
+    }
 }
 
 // Global variable to store the mouse position
