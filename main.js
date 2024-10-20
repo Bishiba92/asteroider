@@ -869,32 +869,41 @@ function drawModal() {
 function openInputModal(text, maxInput = 8, allCaps = true) {
     modalTextPrompt = text;
     inputStr = ''; // Initialize input string
+    
+    // Check if we're on mobile by detecting if the platform is touch-based
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    // Create a hidden input field for mobile keyboard interaction
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'text';
-    hiddenInput.maxLength = maxInput;
-    hiddenInput.style.position = 'absolute';
-    hiddenInput.style.opacity = '0';  // Make the input invisible
-    hiddenInput.style.pointerEvents = 'none';  // Disable interactions
-    hiddenInput.style.zIndex = '-1';  // Send it to the back of the stack
-    document.body.appendChild(hiddenInput);
+    let hiddenInput;
 
-    // Focus on the hidden input to trigger the mobile keyboard
-    hiddenInput.focus();
+    if (isMobile) {
+        // Create a hidden input field for mobile keyboard interaction
+        hiddenInput = document.createElement('input');
+        hiddenInput.type = 'text';
+        hiddenInput.maxLength = maxInput;
+        hiddenInput.style.position = 'absolute';
+        hiddenInput.style.opacity = '0';  // Make the input invisible
+        hiddenInput.style.pointerEvents = 'none';  // Disable interactions
+        hiddenInput.style.zIndex = '-1';  // Send it to the back of the stack
+        document.body.appendChild(hiddenInput);
 
-    // Sync hidden input with the inputStr and handle mobile input
-    hiddenInput.addEventListener('input', () => {
-        inputStr = hiddenInput.value.slice(0, maxInput); // Limit input to maxInput length
-        if (allCaps) inputStr = inputStr.toUpperCase();
-        drawModal(); // Update the modal with the current input
-    });
+        // Focus on the hidden input to trigger the mobile keyboard
+        hiddenInput.focus();
 
-    // Handle key inputs for PC
+        // Sync hidden input with inputStr and handle mobile input
+        hiddenInput.addEventListener('input', () => {
+            inputStr = hiddenInput.value.slice(0, maxInput); // Limit input to maxInput length
+            if (allCaps) inputStr = inputStr.toUpperCase();
+            drawModal(); // Update the modal with the current input
+        });
+    }
+
+    // Handle key inputs for PC (or mobile if virtual keyboard is not needed)
     function handleKeyInput(event) {
         if (event.key === 'Enter') {
             document.removeEventListener('keydown', handleKeyInput);
-            document.body.removeChild(hiddenInput); // Clean up the hidden input
+            if (isMobile && hiddenInput) {
+                document.body.removeChild(hiddenInput); // Clean up the hidden input for mobile
+            }
             isModalActive = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             Managers.Cache.save("playerName", { name: inputStr }, "playerData");
@@ -906,14 +915,16 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
         if (event.key === 'Backspace') {
             inputStr = inputStr.slice(0, -1); // Remove last character
         } else if (inputStr.length < maxInput && /^[a-zA-Z]$/.test(event.key)) {
-            inputStr += event.key; // Add character to inputStr
+            inputStr += allCaps ? event.key.toUpperCase() : event.key; // Add character to inputStr
         }
         drawModal(); // Redraw the modal with the updated input
     }
 
-    // Listen for keyboard input (for PC)
+    // Listen for keyboard input (for PC and possibly fallback for mobile)
     document.addEventListener('keydown', handleKeyInput);
 
+    // Initial draw
+    drawModal();
     whatToDraw = "NameInput"; // Set the drawing mode
 }
 
