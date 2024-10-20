@@ -1,14 +1,17 @@
 let gamepadIndex = null;
+let gamepadConnected = false;
 
 // Listen for gamepad connection
 window.addEventListener('gamepadconnected', (e) => {
     gamepadIndex = e.gamepad.index;
+	gamepadConnected = true;
     console.log('Gamepad connected at index ' + gamepadIndex);
 });
 
 // Listen for gamepad disconnection
 window.addEventListener('gamepaddisconnected', () => {
     console.log('Gamepad disconnected');
+	gamepadConnected = false;
     gamepadIndex = null;
 });
 

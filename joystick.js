@@ -81,12 +81,3 @@ function drawJoystick() {
         ctx.closePath();
     }
 }
-
-// Function to move the player based on the joystick position
-function updatePlayerFromJoystick() {
-    if (joystick.active && joystick.distance > 0) {
-        let speed = (joystick.distance / joystick.radius) * player.speed;
-        player.x += Math.cos(joystick.angle) * speed * timeScale;
-        player.y += Math.sin(joystick.angle) * speed * timeScale;
-    }
-}

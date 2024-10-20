@@ -1,17 +1,6 @@
 const gameVersion = "1.01";
 
-let mousePosition = { x: 0, y: 0 };  // Global variable to store the mouse position
 
-function trackMousePosition(canvas) {
-    canvas.addEventListener('mousemove', function(event) {
-        // Get the bounding rectangle of the canvas
-        const rect = canvas.getBoundingClientRect();
-
-        // Update the mouse position relative to the canvas
-        mousePosition.x = event.clientX - rect.left;
-        mousePosition.y = event.clientY - rect.top;
-    });
-}
 
 const audioPlayer = new AudioPlayer();
 audioPlayer.preloadMusic(['bgm1']);
@@ -45,20 +34,7 @@ let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing o
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${this.size} "Press Start 2P"`;
-// Set isClicking to true when the mouse button is pressed
-    canvas.addEventListener('mousedown', function() {
-        isClicking = true;
-    });
 
-    // Set isClicking to false when the mouse button is released
-    canvas.addEventListener('mouseup', function() {
-        isClicking = false;
-    });
-
-    // Also reset isClicking if the mouse leaves the canvas
-    canvas.addEventListener('mouseleave', function() {
-        isClicking = false;
-    });
 
 let time = 0;
 let timeScale = 1;
@@ -88,7 +64,7 @@ function xorshift(state) {
 }
 
 function getRandom() {
-	return simpleRNG(time, randomSeed, 0, 1);
+    return simpleRNG(time, randomSeed, 0, 1);
 }
 
 function resizeCanvasToWindow() {
@@ -125,31 +101,9 @@ let shields = [];
 let goldStars = [];
 let score = 0;
 let isGameOver = false;
-const keysPressed = {};
 
-function drawPlayer() {
-    ctx.save();
-    ctx.translate(player.x, player.y); // Move the context to the player's position
-    ctx.rotate(player.angle); // Rotate the context to match the player's angle
 
-    // Apply transparency effect if the player is immortal and doesn't have a shield
-    if (player.isImmortal && !player.hasShield) {
-        ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
-    }
 
-    // Assuming the player's image is preloaded and stored in `player.selectedShipImage`
-    const img = player.selectedShipImage;
-
-    // Scale the width and height of the image based on the player's scale factor
-    const imgWidth = img.width * player.scale;
-    const imgHeight = img.height * player.scale;
-
-    // Draw the player's image at the center, taking into account the scaled size
-    ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
-
-    ctx.restore(); // Restore the context's state to avoid affecting other drawings
-    ctx.globalAlpha = 1.0; // Reset transparency
-}
 
 function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifetimeMod = 1.5, explosiveForce = 5000, colors = ['#FF4500', '#FFD700', '#FF6347', '#FFFFFF']) {
     for (let i = 0; i < particleCount; i++) {
@@ -174,7 +128,7 @@ function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifet
     }
 }
 function createParticles() {
-    let intensity = keysPressed['ArrowUp'] || keysPressed['w'] ? 25 : keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['ArrowRight'] || keysPressed['d'] ? 5 : 2;
+    let intensity = up ? 25 : left || right ? 5 : 2;
     intensity *= timeScale * timeScale;
     intensity *= (1 + time * progressionSpeed) * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
@@ -213,7 +167,41 @@ function createGoldStar() {
     const y = -30;
     goldStars.push(new GoldStar(x, y));
 }
+function drawPlayer() {
+    ctx.save();
+    ctx.translate(player.x, player.y); // Move the context to the player's position
+    ctx.rotate(player.angle); // Rotate the context to match the player's angle
 
+    // Apply transparency effect if the player is immortal and doesn't have a shield
+    if (player.isImmortal && !player.hasShield) {
+        ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
+    }
+
+    // Assuming the player's image is preloaded and stored in `player.selectedShipImage`
+    const img = player.selectedShipImage;
+
+    // Scale the width and height of the image based on the player's scale factor
+    const imgWidth = img.width * player.scale;
+    const imgHeight = img.height * player.scale;
+
+    // Draw the player's image at the center, taking into account the scaled size
+    ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+
+    ctx.restore(); // Restore the context's state to avoid affecting other drawings
+    ctx.globalAlpha = 1.0; // Reset transparency
+}
+function drawShieldCircle() {
+    if (player.hasShield) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 40, 0, Math.PI * 2); // Circle with radius 40
+        ctx.strokeStyle = 'cyan';
+        ctx.lineWidth = 5;
+        ctx.globalAlpha = 0.5;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
 function drawShields() {
     shields.forEach(shield => {
         shield.draw();
@@ -235,95 +223,7 @@ function drawObstacles() {
     });
 }
 
-function drawShieldCircle() {
-    if (player.hasShield) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(player.x, player.y, 40, 0, Math.PI * 2); // Circle with radius 40
-        ctx.strokeStyle = 'cyan';
-        ctx.lineWidth = 5;
-        ctx.globalAlpha = 0.5;
-        ctx.stroke();
-        ctx.restore();
-    }
-}
-let isMainMenu = true;
-let selectedMenuOption = 0; // 0 for "Start Game", 1 for "Options"
-let titleOpacity = 0; // Opacity for fading effect
-let titleY = -100; // Starting Y position for the title (off-screen)
-let titleSpeed = 1.5; // Speed for panning down the title
-let menuOptions = ["Start Game", "Options", "Leaderboard"];
 
-// Function to draw the main menu
-function drawMainMenu() {
-    drawBackground(); // Draw stars background
-
-    // Animate the title panning down and fading in
-    if (titleY < canvas.height / 4) {
-        titleY += titleSpeed; // Move the title down
-    }
-    if (titleOpacity < 1) {
-        titleOpacity += 0.02; // Increase opacity for fade-in
-    }
-
-    ctx.save();
-    ctx.globalAlpha = titleOpacity; // Apply the opacity for the title
-    writeText("Asteroider", "top-center", {
-        x: 0,
-        y: titleY
-    }, 60, "white");
-    ctx.restore();
-
-    // Draw the menu options with dynamic positioning
-    for (let i = 0; i < menuOptions.length; i++) {
-        writeText(menuOptions[i], "center", {
-            x: 0,
-            y: i * 60
-        }, 40, selectedMenuOption === i ? "yellow" : "white");
-    }
-}
-
-// Handle menu selection based on current option
-function handleMenuSelection() {
-    if (selectedMenuOption === 0) {
-        startGame(); // Start the game
-        isMainMenu = false; // Exit the menu
-    } else if (selectedMenuOption === 1) {
-        // Handle options menu (not implemented here)
-        console.log("Options selected");
-    } else if (selectedMenuOption === 2) {
-        // Handle leaderboard (not implemented here)
-        console.log("Leaderboard selected");
-    }
-}
-// Mouse click handling for menu selection
-canvas.addEventListener('click', function (event) {
-    if (isMainMenu) {
-        const clickX = event.clientX;
-        const clickY = event.clientY;
-
-        // Check if any of the menu options were clicked
-        for (let i = 0; i < menuOptions.length; i++) {
-            const optionY = canvas.height / 2 + i * 60;
-            if (clickY > optionY - 20 && clickY < optionY + 20) {
-                selectedMenuOption = i;
-                handleMenuSelection();
-            }
-        }
-    }
-});
-// Event listener for keyboard menu navigation
-document.addEventListener('keydown', (e) => {
-    if (isMainMenu) {
-        if (e.key === 'ArrowUp' || e.key === 'w') {
-            selectedMenuOption = (selectedMenuOption - 1 + menuOptions.length) % menuOptions.length; // Navigate up
-        } else if (e.key === 'ArrowDown' || e.key === 's') {
-            selectedMenuOption = (selectedMenuOption + 1) % menuOptions.length; // Navigate down
-        } else if (e.key === 'Enter') {
-            handleMenuSelection();
-        }
-    }
-});
 function checkCollision() {
     obstacles.forEach((obstacle, index) => {
         if (obstacle.checkCollision(player)) {
@@ -513,10 +413,168 @@ function drawRemainingShields() {
     }
 }
 
+let whatToDraw = "Main";
+
+let isMainMenu = true;
+let selectedMenuOption = 0; // 0 for "Start Game", 1 for "Options"
+let mainMenuOptions = ["Start Game", "Options", "Leaderboard"];
+
+let titleOpacity = 0; // Opacity for fading effect
+let titleY = -100; // Starting Y position for the title (off-screen)
+let titleSpeed = 1.5; // Speed for panning down the title
+
+// Function to draw the main menu
+function drawMainMenu() {
+    // Animate the title panning down and fading in
+    if (titleY < canvas.height / 4) {
+        titleY += titleSpeed; // Move the title down
+    }
+    if (titleOpacity < 1) {
+        titleOpacity += 0.02; // Increase opacity for fade-in
+    }
+
+    ctx.save();
+
+    ctx.globalAlpha = titleOpacity; // Apply the opacity for the title
+    writeText("Asteroider", "top-center", {
+        x: 0,
+        y: titleY
+    }, 60, "white");
+    ctx.restore();
+
+    // Draw the menu options with dynamic positioning
+    for (let i = 0; i < mainMenuOptions.length; i++) {
+        writeText(mainMenuOptions[i], "center", {
+            x: 0,
+            y: i * 60
+        }, 40, selectedMenuOption === i ? "yellow" : "white");
+    }
+}
+// Mouse click handling for menu selection
+canvas.addEventListener('click', function (event) {
+    if (isMainMenu) {
+        const clickX = event.clientX;
+        const clickY = event.clientY;
+
+        // Check if any of the menu options were clicked
+        for (let i = 0; i < mainMenuOptions.length; i++) {
+            const optionY = canvas.height / 2 + i * 60;
+            if (clickY > optionY - 20 && clickY < optionY + 20) {
+                selectedMenuOption = i;
+                handleMenuSelection();
+            }
+        }
+    }
+});
+
+let selectOptionCooldown = 0;
+let selectOptionTimer = 30;
+function optionCooldown() {
+	selectOptionCooldown = selectOptionTimer;
+}
+function isSelectOnCooldown() {
+	return selectOptionCooldown > 0;
+}
+
+// Event listener for keyboard menu navigation
+function changeMenuOption(menuOptions, selectedMenuOption){
+	if (isSelectOnCooldown()) return selectedMenuOption;
+	if (up) {
+		console.log(menuOptions)
+		console.log("up")
+		selectedMenuOption = (selectedMenuOption - 1 + menuOptions.length) % menuOptions.length; // Navigate up
+		optionCooldown();
+	} else if (down) {
+		console.log("down")
+		selectedMenuOption = (selectedMenuOption + 1) % menuOptions.length; // Navigate down
+		optionCooldown();
+	}
+	return selectedMenuOption;
+};
+// Handle menu selection based on current option
+function handleMenuSelection() {
+	if (isSelectOnCooldown()) return;
+	if (enter) {
+    if (selectedMenuOption === 0) {
+		optionCooldown()
+        startGame(); // Start the game
+        isMainMenu = false; // Exit the menu
+    } else if (selectedMenuOption === 1) {
+			showOptions();
+			optionCooldown()
+    } else if (selectedMenuOption === 2) {
+			showLeaderboard();
+			optionCooldown()
+    }
+	}
+}
+
+
+let selectedGameOption = 0; // 0 for "Start Game", 1 for "Options"
+let gameOptions = [];
+
+function drawOptionsMenu() {
+	let muted = audioPlayer.muteMusic ? "X" : "O";
+	let mVol = (audioPlayer.musicVolume * 100).toFixed(0) + " %";
+	let sVol = (audioPlayer.sfxVolume * 100).toFixed(0) + " %";
+	gameOptions = ["Mute Audio: " + muted, "Music Volume: " + mVol, "SFX Volume: " + sVol];
+    ctx.save();
+    writeText("Asteroider", "top-center", {
+        x: 0,
+        y: titleY
+    }, 60, "white");
+    ctx.restore();
+
+    // Draw the menu options with dynamic positioning
+    for (let i = 0; i < gameOptions.length; i++) {
+        writeText(gameOptions[i], "center", {
+            x: 0,
+            y: i * 60
+        }, 40, selectedGameOption === i ? "yellow" : "white");
+    }
+}
+function handleGameOptionsSelection() {
+	if (isSelectOnCooldown()) return;
+    if (enter && selectedGameOption === 0) {
+        audioPlayer.toggleMuteAll();
+		optionCooldown();
+    } else if (selectedGameOption === 1) {
+			if (left) {
+				optionCooldown();
+				audioPlayer.changeVolume("music", -0.1);
+			} else if (right) {
+				optionCooldown();
+				audioPlayer.changeVolume("music", 0.1);
+			}
+    } else if (selectedGameOption === 2) {
+			if (left) {
+				optionCooldown();
+				audioPlayer.changeVolume("sfx", -0.1);
+			} else if (right) {
+				optionCooldown();
+				audioPlayer.changeVolume("sfx", 0.1);
+			}
+    }
+	if (esc) {
+		optionCooldown();
+		showMainMenu();
+	}	
+}
+
+function showMainMenu() {
+	whatToDraw = "Main";
+}
+function showOptions() {
+	whatToDraw = "Options";
+}
+function showLeaderboard() {
+	whatToDraw = "Leaderboard";
+}
+
 let gameoverMessage = "Game Over!";
 let restartMessage = "Press R or tap to Restart";
 
-function draw() {
+function drawGame() {
     drawBackground();
     if (isGameOver)
         drawPlayer();
@@ -553,30 +611,42 @@ function draw() {
         }, 24, "white", "center");
     }
 
-    writeText(`Spawn Density: ${objectSpawnRateByWidthOfScreen.toFixed("3")}`, "top-right", {
-        x: -8,
-        y: 28
-    }, 12);
-    writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
-        x: -8,
-        y: 20 * 2
-    }, 12);
-	writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "top-right", {
-        x: -8,
-        y: 20 * 3
-    }, 12);
+    drawGameTestTexts();
     // Draw the joystick if active
     drawJoystick();
 }
 
+function drawGameTestTexts() {
+	let i = 1;
+	let rowHeight = 24;
+	let yOffset = 10;
+	writeText(`Spawn Density: ${objectSpawnRateByWidthOfScreen.toFixed("3")}`, "top-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 12);
+    writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 12);
+    writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "top-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 12);
+	writeText(`Player speed: ${player.speed}`, "top-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 12);
+}
+
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
-	trackMousePosition(canvas);
-	if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) 
-	{
-		console.log("Trying to play music");
-		audioPlayer.nextMusic();
-	}
+	
+	selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
+    trackMousePosition(canvas);
+    if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound()) {
+        console.log("Trying to play music");
+        audioPlayer.nextMusic();
+    }
     // Calculate the time difference between the current frame and the last frame
     let elapsedTime = currentTime - lastFrameTime;
 
@@ -589,15 +659,38 @@ function gameLoop(currentTime) {
         resizeCanvasToWindow();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (isMainMenu) {
-            drawMainMenu();
-            handleGamepadInput(); // Check for gamepad input
-        } else {
-            drawBackground();
-            keepPlayerInBounds();
-            updatePlayerFromJoystick();
-            draw();
-            updateGame();
+        switch (whatToDraw) {
+        case "Main": {
+					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
+					handleMenuSelection();
+                drawMainMenu();
+                handleGamepadInput(); // Check for gamepad input
+                break;
+            }
+        case "Game": {
+                keepPlayerInBounds();
+                drawGame();
+                updateGame();
+					if (isGameOver && restart) {
+						startGame();
+					}
+                break;
+            }
+			case "Options": {
+					selectedGameOption = changeMenuOption(gameOptions, selectedGameOption);
+					handleGameOptionsSelection();
+                drawOptionsMenu();
+                break;
+            }
+			case "Leaderboard": {
+                
+                break;
+            }
+			case "NameInput": {
+                drawModal();
+                break;
+            }
+			
         }
 
         // Calculate and display FPS
@@ -661,13 +754,29 @@ function keepPlayerInBounds(margin = 20) {
 
 let restartInt = 0;
 // Start the game function
+function setupGame() {
+	console.log(player.name);
+    audioPlayer.setMasterVolume(0.3);
+    canvas.addEventListener('mousedown', startJoystick);
+    canvas.addEventListener('touchstart', startJoystick);
+	if (player.name == undefined) openInputModal("Pilot Name");
+	 setupKeyListeners()
+    gameLoop();
+}
+function setPlayerName() {
+	Managers.Cache.load("playerName").then(data => {
+		if (data != undefined) {
+			player.name = data.name;
+		}
+		setupGame();
+	});
+}
 function startGame() {
-	audioPlayer.setMasterVolume(0.3)
+	whatToDraw = "Game";
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
-
     timeScale = 1;
     isGameOver = false;
     score = 0;
@@ -682,24 +791,43 @@ function startGame() {
     createStars();
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-    gameLoop();
+
 }
 
-// Update player movement via gamepad during the game
+function lerp(start, end, amount) {
+    return start + (end - start) * amount;
+}
+
 function updatePlayerPosition() {
-    if ((keysPressed['ArrowLeft'] || keysPressed['a'])) {
+    const angleEaseSpeed = 0.1; // Adjust this for the desired easing speed
+    const maxAngle = 0.4	; // Use the maxAngle property of the player, default to 0.3 if undefined
+
+    // Keyboard movement
+    if (left) {
         player.x -= player.speed * timeScale;
-        player.angle = -0.3;
-    }
-    if ((keysPressed['ArrowRight'] || keysPressed['d'])) {
+        player.angle = lerp(player.angle, -maxAngle, angleEaseSpeed); // Use maxAngle for left rotation
+    } else if (right) {
         player.x += player.speed * timeScale;
-        player.angle = 0.3;
+        player.angle = lerp(player.angle, maxAngle, angleEaseSpeed); // Use maxAngle for right rotation
+    } else {
+        player.angle = lerp(player.angle, 0, angleEaseSpeed); // Ease back to 0 when no input
     }
-    if ((keysPressed['ArrowUp'] || keysPressed['w'])) {
+
+    if (up) {
         player.y -= player.speed * timeScale;
     }
-    if ((keysPressed['ArrowDown'] || keysPressed['s'])) {
+    if (down) {
         player.y += player.speed * timeScale;
+    }
+
+    // Virtual joystick movement
+    if (joystick.active && joystick.distance > 0) {
+        let speed = (joystick.distance / joystick.radius) * player.speed;
+        player.x += Math.cos(joystick.angle) * speed * timeScale;
+        player.y += Math.sin(joystick.angle) * speed * timeScale;
+
+        let joystickAngleX = Math.cos(joystick.angle); // X component of joystick angle
+        player.angle = lerp(player.angle, joystickAngleX * maxAngle, angleEaseSpeed); // Scale angle between -maxAngle and maxAngle
     }
 
     // Handle gamepad input for movement
@@ -712,22 +840,210 @@ function updatePlayerPosition() {
         if (Math.abs(leftX) > 0.1 || Math.abs(leftY) > 0.1) {
             player.x += leftX * player.speed * timeScale;
             player.y += leftY * player.speed * timeScale;
+
+            player.angle = lerp(player.angle, leftX * maxAngle, angleEaseSpeed); // Scale angle based on leftX axis using maxAngle
+        } else {
+            player.angle = lerp(player.angle, 0, angleEaseSpeed); // Ease back to 0 when no input
         }
     }
 }
 
-document.addEventListener('keydown', (e) => {
-    keysPressed[e.key] = true;
-    if (isGameOver && (e.key === 'r' || e.key === 'R')) {
-        startGame();
+
+
+let inputStr = '';
+let isModalActive = true;
+let allCaps = true;
+let modalTextPrompt = "";
+let maxTextInput = 8;
+
+// Draw the modal with "MESSAGE" and the input area
+function drawModal() {
+	writeText(modalTextPrompt, 'center', {x: 0, y: -35});
+
+	let displayText = inputStr;
+	if (allCaps) displayText = displayText.toUpperCase();
+	writeText(displayText.padEnd(maxTextInput, '_'), 'center', {x: 0, y: 0}, 24, "yellow");
+}
+
+function openInputModal(text, maxInput = 8, allCaps = true) {
+    modalTextPrompt = text;
+    inputStr = ''; // Initialize input string
+
+    // Create a hidden input field for mobile keyboard interaction
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'text';
+    hiddenInput.maxLength = maxInput;
+    hiddenInput.style.position = 'absolute';
+    hiddenInput.style.opacity = '0';  // Make the input invisible
+    hiddenInput.style.pointerEvents = 'none';  // Disable interactions
+    hiddenInput.style.zIndex = '-1';  // Send it to the back of the stack
+    document.body.appendChild(hiddenInput);
+
+    // Focus on the hidden input to trigger the mobile keyboard
+    hiddenInput.focus();
+
+    // Sync hidden input with the inputStr and handle mobile input
+    hiddenInput.addEventListener('input', () => {
+        inputStr = hiddenInput.value.slice(0, maxInput); // Limit input to maxInput length
+        if (allCaps) inputStr = inputStr.toUpperCase();
+        drawModal(); // Update the modal with the current input
+    });
+
+    // Handle key inputs for PC
+    function handleKeyInput(event) {
+        if (event.key === 'Enter') {
+            document.removeEventListener('keydown', handleKeyInput);
+            document.body.removeChild(hiddenInput); // Clean up the hidden input
+            isModalActive = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            Managers.Cache.save("playerName", { name: inputStr }, "playerData");
+            player.name = inputStr;
+            whatToDraw = "Main";
+            optionCooldown();
+            return inputStr;
+        }
+        if (event.key === 'Backspace') {
+            inputStr = inputStr.slice(0, -1); // Remove last character
+        } else if (inputStr.length < maxInput && /^[a-zA-Z]$/.test(event.key)) {
+            inputStr += event.key; // Add character to inputStr
+        }
+        drawModal(); // Redraw the modal with the updated input
     }
+
+    // Listen for keyboard input (for PC)
+    document.addEventListener('keydown', handleKeyInput);
+
+    whatToDraw = "NameInput"; // Set the drawing mode
+}
+
+// Global variable to store the mouse position
+let mousePosition = {
+    x: 0,
+    y: 0
+};
+let isClicking = false;
+let left = false;
+let right = false;
+let up = false;
+let down = false;
+let enter = false;
+let esc = false;
+let space = false;
+let restart = false;
+
+function setupKeyListeners() {
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+}
+
+// Handle key down event
+function handleKeyDown(event) {
+    switch (event.key) {
+        case 'a':
+        case 'A':
+        case 'ArrowLeft':
+            left = true;
+            break;
+        case 'd':
+        case 'D':
+        case 'ArrowRight':
+            right = true;
+            break;
+        case 'w':
+        case 'W':
+        case 'ArrowUp':
+            up = true;
+            break;
+        case 's':
+        case 'S':
+        case 'ArrowDown':
+            down = true;
+            break;
+        case 'Enter':
+            enter = true;
+            break;
+        case 'Escape':
+            esc = true;
+            break;
+        case ' ':
+            space = true;
+            break;
+        case 'r':
+        case 'R':
+            restart = true;
+            break;
+        default:
+            break;
+    }
+}
+
+// Handle key up event
+function handleKeyUp(event) {
+    switch (event.key) {
+        case 'a':
+        case 'A':
+        case 'ArrowLeft':
+            left = false;
+            break;
+        case 'd':
+        case 'D':
+        case 'ArrowRight':
+            right = false;
+            break;
+        case 'w':
+        case 'W':
+        case 'ArrowUp':
+            up = false;
+            break;
+        case 's':
+        case 'S':
+        case 'ArrowDown':
+            down = false;
+            break;
+        case 'Enter':
+            enter = false;
+            break;
+        case 'Escape':
+            esc = false;
+            break;
+        case ' ':
+            space = false;
+            break;
+        case 'r':
+        case 'R':
+            restart = false;
+            break;
+        default:
+            break;
+    }
+}
+
+
+// Set isClicking to true when the mouse button is pressed
+canvas.addEventListener('mousedown', function () {
+    isClicking = true;
 });
 
-document.addEventListener('keyup', (e) => {
-    keysPressed[e.key] = false;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'a' || e.key === 'd') {
-        player.angle = 0;
-    }
+// Set isClicking to false when the mouse button is released
+canvas.addEventListener('mouseup', function () {
+    isClicking = false;
 });
 
-startGame();
+// Also reset isClicking if the mouse leaves the canvas
+canvas.addEventListener('mouseleave', function () {
+    isClicking = false;
+});
+
+function trackMousePosition(canvas) {
+    canvas.addEventListener('mousemove', function (event) {
+        // Get the bounding rectangle of the canvas
+        const rect = canvas.getBoundingClientRect();
+
+        // Update the mouse position relative to the canvas
+        mousePosition.x = event.clientX - rect.left;
+        mousePosition.y = event.clientY - rect.top;
+    });
+}
+
+
+setPlayerName();
