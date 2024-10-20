@@ -70,7 +70,7 @@ class Particle {
 			this.rotationAngle += this.rotationSpeed * timeScale;
 
 			// Check if obstacle moves off the screen
-			if (this.y > canvas.height && this.isActive) {
+			if (this.y > canvas.height + 50 && this.isActive) {
 				obstacles = obstacles.filter(item => item !== this);
 				this.isActive = false;
 			}
@@ -174,7 +174,7 @@ class Particle {
 
 			update() {
 				this.y += this.speed * timeScale;
-				if (this.y > canvas.height) {
+				if (this.y > canvas.height + 50) {
 					this.y = -30;
 					this.x = Math.random() * (canvas.width - 30);
 				}
@@ -212,7 +212,7 @@ class Particle {
 			}
             update() {
                 this.y += this.speed * timeScale;
-                if (this.y > canvas.height) {
+                if (this.y > canvas.height + 50) {
                     this.y = -30;
                     this.x = Math.random() * (canvas.width - 30);
                 }

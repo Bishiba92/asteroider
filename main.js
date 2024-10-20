@@ -9,9 +9,10 @@ audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
 // audioPlayer.preloadBGS(['bgs1']);
 // audioPlayer.playSFX('sfx1');
 // audioPlayer.playBGS('bgs1');
-const shipImages = [new Image(), new Image()];
+const shipImages = [new Image(), new Image(), new Image()];
 shipImages[0].src = 'img/ship0.png';
 shipImages[1].src = 'img/ship1.png';
+shipImages[2].src = 'img/ship2.png';
 
 const playerShieldImage = new Image();
 playerShieldImage.src = 'img/shield.png';
@@ -944,20 +945,22 @@ function lerp(start, end, amount) {
 function updatePlayerPosition() {
     const angleEaseSpeed = 0.1; // Adjust this for the desired easing speed
     const maxAngle = 0.4	; // Use the maxAngle property of the player, default to 0.3 if undefined
+	const sideMax = 1.4;
+	
 
     // Keyboard movement
     if (left) {
-        player.x -= player.speed * timeScale;
+        player.x -= player.speed * sideMax * timeScale;
         player.angle = lerp(player.angle, -maxAngle, angleEaseSpeed); // Use maxAngle for left rotation
     } else if (right) {
-        player.x += player.speed * timeScale;
+        player.x += player.speed * sideMax * timeScale;
         player.angle = lerp(player.angle, maxAngle, angleEaseSpeed); // Use maxAngle for right rotation
     } else {
         player.angle = lerp(player.angle, 0, angleEaseSpeed); // Ease back to 0 when no input
     }
 
     if (up) {
-        player.y -= player.speed * timeScale;
+        player.y -= player.speed  * timeScale;
     }
     if (down) {
         player.y += player.speed * timeScale;
@@ -966,7 +969,7 @@ function updatePlayerPosition() {
     // Virtual joystick movement
     if (joystick.active && joystick.distance > 0) {
         let speed = (joystick.distance / joystick.radius) * player.speed;
-        player.x += Math.cos(joystick.angle) * speed * timeScale;
+        player.x += Math.cos(joystick.angle) * speed * sideMax * timeScale;
         player.y += Math.sin(joystick.angle) * speed * timeScale;
 
         let joystickAngleX = Math.cos(joystick.angle); // X component of joystick angle
@@ -981,7 +984,7 @@ function updatePlayerPosition() {
 
         // Apply deadzone for stick drift
         if (Math.abs(leftX) > 0.1 || Math.abs(leftY) > 0.1) {
-            player.x += leftX * player.speed * timeScale;
+            player.x += leftX * player.speed * sideMax * timeScale;
             player.y += leftY * player.speed * timeScale;
 
             player.angle = lerp(player.angle, leftX * maxAngle, angleEaseSpeed); // Scale angle based on leftX axis using maxAngle
