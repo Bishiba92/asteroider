@@ -23,8 +23,8 @@ function nextShip() {
 	if (isSelectOnCooldown()) return;
 	optionCooldown();
    currentShipIndex = (currentShipIndex + 1) % ships.length;
-	setPlayerShip();
-	
+	player.ship = ships[currentShipIndex];
+	playerShipImage.changeImage(player.ship.imgName);
 }
 
 // Function to show the previous ship image
@@ -32,7 +32,8 @@ function previousShip() {
 	if (isSelectOnCooldown()) return;
 	optionCooldown();
    currentShipIndex = (currentShipIndex - 1 + ships.length) % ships.length;
-	setPlayerShip();
+	player.ship = ships[currentShipIndex];
+	playerShipImage.changeImage(player.ship.imgName);
 }
 
 const playerShieldImage = new Image();
@@ -302,7 +303,7 @@ function checkCollision() {
         const distY = shield.y - player.y;
 
         const distance = Math.sqrt(distX * distX + distY * distY);
-        if (distance < 110) {
+        if (distance < 80 * player.ship.size) {
             createParticleExplosion(shield.x, shield.y, 100, 0.5, 0.5, 2, ['#00FFFF', '#00FFFF', '#00FFFF', '#0000FF']);
             handleShieldPickup(index);
         }
@@ -313,7 +314,7 @@ function checkCollision() {
         const distY = star.y - player.y;
         const distance = Math.sqrt(distX * distX + distY * distY);
 
-        if (distance < 80) {
+        if (distance < 50 * player.ship.size) {
             createParticleExplosion(star.x, star.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
             handleGoldStarPickup(index);
         }
@@ -363,7 +364,7 @@ function setGameover(inputStr = null) {
 
 function handleShieldPickup(index) {
     audioPlayer.playSFX('shieldGain');
-    if (player.shields < 3) {
+    if (player.shields < player.ship.health) {
         player.shields += 1;
     }
     score += 5;
@@ -591,8 +592,10 @@ function drawMainMenu() {
         y: titleY
     }, 4, "white");
     ctx.restore();
-	playerShipImage.moveToPoint({x:canvas.width/2,y:canvas.height/2+255});
+	
+	playerShipImage.moveToPoint({x:canvas.width/2 - 40,y:canvas.height/2+255});
 	playerShipImage.draw();
+	
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < mainMenuOptions.length; i++) {
         selectedMenuOption = writeMenuText(mainMenuOptions[i], "center", {
@@ -600,6 +603,26 @@ function drawMainMenu() {
             y: i * 60
         }, 1.6, textButtonColors, selectedMenuOption === i).isSelected ? i : selectedMenuOption;
     }
+	let base = {x: canvas.width/2, y: canvas.height/2+255};
+	let r = 1;
+	let rh = 20;
+	let shipOffset = {x: 20, y: -50};
+	let colOffset = 60;
+	
+	writeText(player.ship.name, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y}, 1, "yellow", "left");
+	
+	writeText(`Speed:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
+	writeText(`${player.ship.speed}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	
+	writeText(`Steer:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
+	writeText(`${player.ship.steering}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	
+	writeText(`Health:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
+	writeText(`${player.ship.health}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	
+	writeText(`Size:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
+	writeText(`${player.ship.size}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	
 	
 }
 
@@ -1092,7 +1115,7 @@ function startGame() {
     isGameOver = false;
     score = 0;
     time = 0;
-    player.shields = 3;
+    player.shields = player.ship.health;
     player.isImmortal = false;
     obstacles = [];
     shields = [];
@@ -1112,6 +1135,7 @@ function updatePlayerPosition() {
     const angleEaseSpeed = 0.1; // Adjust this for the desired easing speed
     const maxAngle = 0.4	; // Use the maxAngle property of the player, default to 0.3 if undefined
 	const sideMax = 1.4;
+	const thrust = 1 * player.ship.speed;
 	
 
     // Keyboard movement
@@ -1126,17 +1150,17 @@ function updatePlayerPosition() {
     }
 
     if (up) {
-        player.y -= player.speed  * timeScale;
+        player.y -= player.speed * thrust * timeScale;
     }
     if (down) {
-        player.y += player.speed * timeScale;
+        player.y += player.speed * thrust * timeScale;
     }
 
     // Virtual joystick movement
     if (joystick.active && joystick.distance > 0) {
         let speed = (joystick.distance / joystick.radius) * player.speed;
         player.x += Math.cos(joystick.angle) * speed * sideMax * timeScale;
-        player.y += Math.sin(joystick.angle) * speed * timeScale;
+        player.y += Math.sin(joystick.angle) * speed * thrust * timeScale;
 
         let joystickAngleX = Math.cos(joystick.angle); // X component of joystick angle
         player.angle = lerp(player.angle, joystickAngleX * maxAngle, angleEaseSpeed); // Scale angle between -maxAngle and maxAngle
@@ -1151,7 +1175,7 @@ function updatePlayerPosition() {
         // Apply deadzone for stick drift
         if (Math.abs(leftX) > 0.1 || Math.abs(leftY) > 0.1) {
             player.x += leftX * player.speed * sideMax * timeScale;
-            player.y += leftY * player.speed * timeScale;
+            player.y += leftY * player.speed * thrust * timeScale;
 
             player.angle = lerp(player.angle, leftX * maxAngle, angleEaseSpeed); // Scale angle based on leftX axis using maxAngle
         } else {
@@ -1408,33 +1432,27 @@ function handleKeyUp(event) {
     }
 }
 
-
-// Set isClicking to true when the mouse button is pressed
 canvas.addEventListener('mousedown', function () {
     isClicking = true;
 });
 
-// Set isClicking to false when the mouse button is released
 canvas.addEventListener('mouseup', function () {
     isClicking = false;
 });
 
-// Also reset isClicking if the mouse leaves the canvas
 canvas.addEventListener('mouseleave', function () {
     isClicking = false;
 });
 
-// Set isClicking to true when the screen is touched
+// Handle touch events for mobile
 canvas.addEventListener('touchstart', function () {
     isClicking = true;
 });
 
-// Set isClicking to false when the touch ends
 canvas.addEventListener('touchend', function () {
     isClicking = false;
 });
 
-// Also reset isClicking if the touch is canceled (e.g., the finger is dragged off the canvas)
 canvas.addEventListener('touchcancel', function () {
     isClicking = false;
 });

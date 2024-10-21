@@ -100,7 +100,7 @@ class Particle {
 			const asteroidRadius = Math.max(this.width, this.height) / 2;
 
 			// Check for collision
-			if (distance <= object.radius + asteroidRadius) {
+			if (distance <= object.radius * player.ship.size + asteroidRadius) {
 				return true; // Collision detected
 			}
 			return false; // No collision
@@ -295,7 +295,7 @@ class ImageObject {
         this.isSelected = selected;
     }
 	
-	    changeImage(newImgName) {
+	 changeImage(newImgName) {
         this.imgName = newImgName;
         this.img.src = `img/${newImgName}.png`; // Change the base image
 
@@ -340,23 +340,36 @@ class ImageObject {
         ctx.restore(); // Restore the canvas state
     }
 
-    // Updates the image's selected and clicked states
-    update() {
-        // Update position, scale, and rotation transitions
-        this.updateTransitions();
+	update() {
+		// Update position, scale, and rotation transitions
+		this.updateTransitions();
 
-        // If overrideClickSelect is true, do not check for selection or clicking
-        if (!this.overrideClickSelect) {
-            // Update selected and clicked states only if applicable
-            if (this.hasSelected) {
-                this.isSelected = this.checkIfSelected(); // Only update if not selected via keyboard
-            }
-            if (this.hasClicked) {
-                this.isClicked = this.isSelected && isClicking;
-					if (this.isClicked && this.onClick != null) this.onClick();
-            }
-        }
-    }
+		// If overrideClickSelect is true, do not check for selection or clicking
+		if (!this.overrideClickSelect) {
+			// Update selected and clicked states only if applicable
+			if (this.hasSelected) {
+				this.isSelected = this.checkIfSelected();
+			}
+			
+			if (this.hasClicked) {
+				// Check if the ship is selected and the user is clicking or touching on it
+				if (this.isSelected && isClicking) {
+					this.isClicked = true;
+				} else {
+					this.isClicked = false;
+				}
+
+				// Trigger onClick action if the ship is clicked
+				if (this.isClicked && this.onClick) {
+					this.onClick();
+					
+					// Reset isClicked after the action to prevent further clicks outside the ship from triggering the event
+					this.isClicked = false;
+					isClicking = false;  // Reset global click state to prevent accidental triggering
+				}
+			}
+		}
+	}
 
     // Updates transitions (position, scale, rotation) based on frame count
     updateTransitions() {
@@ -439,6 +452,7 @@ class ImageObject {
         this.rotateFrameCount = 0; // Reset frame counter
     }
 }
+
 const shipImages = [new Image(), new Image(), new Image()];
 shipImages[0].src = 'img/ship0.png';
 shipImages[1].src = 'img/ship1.png';
@@ -454,6 +468,7 @@ class Ship {
         this.health = health;
         this.width = 0;
         this.height = 0;
+	     this.size = size;
 
         // Load the base image to get the dimensions
         this.img.onload = () => {
