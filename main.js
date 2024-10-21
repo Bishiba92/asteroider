@@ -2,12 +2,11 @@ const gameVersion = "1.12";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
-	font: "Audiowide",
-	fontSize: 22,
-	fontColor: "white",
+    font: "Audiowide",
+    fontSize: 22,
+    fontColor: "white",
 }
 const textButtonColors = ['white', '#FFFF00', '#FFD700'];
-
 
 const audioPlayer = new AudioPlayer();
 audioPlayer.preloadMusic(['bgm1']);
@@ -20,20 +19,22 @@ let currentShipIndex = 0;
 
 // Function to show the next ship image
 function nextShip() {
-	if (isSelectOnCooldown()) return;
-	optionCooldown();
-   currentShipIndex = (currentShipIndex + 1) % ships.length;
-	player.ship = ships[currentShipIndex];
-	playerShipImage.changeImage(player.ship.imgName);
+    if (isSelectOnCooldown())
+        return;
+    optionCooldown();
+    currentShipIndex = (currentShipIndex + 1) % ships.length;
+    player.ship = ships[currentShipIndex];
+    playerShipImage.changeImage(player.ship.imgName);
 }
 
 // Function to show the previous ship image
 function previousShip() {
-	if (isSelectOnCooldown()) return;
-	optionCooldown();
-   currentShipIndex = (currentShipIndex - 1 + ships.length) % ships.length;
-	player.ship = ships[currentShipIndex];
-	playerShipImage.changeImage(player.ship.imgName);
+    if (isSelectOnCooldown())
+        return;
+    optionCooldown();
+    currentShipIndex = (currentShipIndex - 1 + ships.length) % ships.length;
+    player.ship = ships[currentShipIndex];
+    playerShipImage.changeImage(player.ship.imgName);
 }
 
 const playerShieldImage = new Image();
@@ -59,7 +60,7 @@ let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing o
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 ctx.font = `${textDefaults.fontSize}px ${textDefaults.font}`;
-	
+
 let fontScale = 1;
 
 let time = 1;
@@ -95,26 +96,27 @@ function getRandom() {
 
 function resizeCanvasToWindow() {
     const canvas = document.getElementById('gameCanvas');
-    
+
     // Use visualViewport for more accurate sizing on mobile
     const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
     const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    
+
     // Desired aspect ratio (9:16, approximately 0.5625)
     const aspectRatio = 9 / 16;
-    
+
     // Define the max height (800px) for non-mobile
     const maxHeight = 1800; // Max height for non-mobile
-    
-    let canvasHeight, canvasWidth;
-    
+
+    let canvasHeight,
+    canvasWidth;
+
     if (!isMobile) {
         // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
         canvasHeight = Math.min(viewportHeight, maxHeight);
-        
+
         // Calculate the corresponding width to maintain the 9:16 aspect ratio
         canvasWidth = canvasHeight * aspectRatio;
-        
+
         // Adjust canvas dimensions
         canvas.height = canvasHeight;
         canvas.width = canvasWidth;
@@ -122,9 +124,9 @@ function resizeCanvasToWindow() {
         // For mobile, use full viewport dimensions (no constraints)
         canvas.width = viewportWidth;
         canvas.height = viewportHeight;
-		// Force the height to always be the viewport height or the maxHeight (whichever is smaller)
+        // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
         canvasHeight = Math.min(viewportHeight, maxHeight);
-        
+
         // Calculate the corresponding width to maintain the 9:16 aspect ratio
         canvasWidth = canvasHeight * aspectRatio;
     }
@@ -159,7 +161,7 @@ let player = {
     isImmortal: false,
     immortalTime: 0,
     hasShield: false,
-	 ship: null
+    ship: null
 };
 
 player.ship = ships[Math.floor(Math.random() * ships.length)];
@@ -199,7 +201,7 @@ function createParticles() {
     intensity *= timeScale * timeScale;
     intensity *= timeMod * (1 + Math.random() * 2);
     for (let i = 0; i < intensity; i++) {
-        let color = ['#00FFFF','#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
+        let color = ['#00FFFF', '#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
         let size = Math.random() * 1 + 0.5;
         let xOffset = Math.random() * 10 - 5;
         let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
@@ -290,7 +292,6 @@ function drawObstacles() {
     });
 }
 
-
 function checkCollision() {
     obstacles.forEach((obstacle, index) => {
         if (obstacle.checkCollision(player)) {
@@ -324,7 +325,7 @@ function checkCollision() {
 let leaderboard = [];
 let currentRecord = 0;
 async function setCurrentRecord() {
-	currentRecord = await getRecord(player.name);
+    currentRecord = await getRecord(player.name);
 }
 
 function handleCollision(obstacle, index) {
@@ -338,9 +339,9 @@ function handleCollision(obstacle, index) {
             grantImmortality();
         audioPlayer.playSFX('explosion1');
         if (player.shields === 0) {
-          createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
-			audioPlayer.playSFX('gameover');
-			setGameover();
+            createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
+            audioPlayer.playSFX('gameover');
+            setGameover();
         }
         player.hasShield = false;
         player.immortalTime = 10;
@@ -348,19 +349,20 @@ function handleCollision(obstacle, index) {
 }
 
 function setGameover(inputStr = null) {
-	isGameOver = true;
-	if (inputStr != null) player.name = inputStr;
-	endJoystick();
-	timeScale = 0.03;
-	canvas.removeEventListener('mousedown', startJoystick);
-	canvas.removeEventListener('touchstart', startJoystick);   
-	if (player.name == undefined) {
-		openInputModal("Pilot Name", setGameover);
-	} else {
-		canvas.addEventListener('mousedown', startGame);
-		canvas.addEventListener('touchstart', startGame);
-		updateLeaderboard(player, score);					
-	}	
+    isGameOver = true;
+    if (inputStr != null)
+        player.name = inputStr;
+    endJoystick();
+    timeScale = 0.03;
+    canvas.removeEventListener('mousedown', startJoystick);
+    canvas.removeEventListener('touchstart', startJoystick);
+    if (player.name == undefined) {
+        openInputModal("Pilot Name", setGameover);
+    } else {
+        canvas.addEventListener('mousedown', startGame);
+        canvas.addEventListener('touchstart', startGame);
+        updateLeaderboard(player, score);
+    }
 }
 
 function handleShieldPickup(index) {
@@ -431,14 +433,17 @@ function immortalTimer() {
         player.hasShield = false;
     }
 }
-function writeText(text, anchor, offset = { x: 0, y: 0 }, fontMod, color = 'white', align) {
+function writeText(text, anchor, offset = {
+        x: 0,
+        y: 0
+    }, fontMod, color = 'white', align) {
     fontSize = textDefaults.fontSize * fontMod * fontScale;
-    const canvasWidth = ctx.canvas.width;  // Get canvas width
-    const canvasHeight = ctx.canvas.height;  // Get canvas height
-    ctx.fillStyle = color;  // Set the color for the text
-    ctx.font = `${fontSize}px ${textDefaults.font}`;  // Set the font size and font family
+    const canvasWidth = ctx.canvas.width; // Get canvas width
+    const canvasHeight = ctx.canvas.height; // Get canvas height
+    ctx.fillStyle = color; // Set the color for the text
+    ctx.font = `${fontSize}px ${textDefaults.font}`; // Set the font size and font family
 
-    const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
+    const textHeight = fontSize; // Simplified approximation of text height (based on font size)
 
     let x = 0;
     let y = 0;
@@ -457,11 +462,11 @@ function writeText(text, anchor, offset = { x: 0, y: 0 }, fontMod, color = 'whit
 
     // Handle vertical anchor points (manually position y)
     if (anchor.includes('top')) {
-        y = textHeight;  // Start at text height since y refers to the baseline
+        y = textHeight; // Start at text height since y refers to the baseline
     } else if (anchor.includes('center')) {
         y = canvasHeight / 2 + textHeight / 2;
     } else if (anchor.includes('bottom')) {
-        y = canvasHeight - textHeight / 4;  // Adjust to leave some space for descenders
+        y = canvasHeight - textHeight / 4; // Adjust to leave some space for descenders
     }
 
     // Apply offsets to x and y
@@ -471,7 +476,10 @@ function writeText(text, anchor, offset = { x: 0, y: 0 }, fontMod, color = 'whit
     // Draw the text on the canvas
     ctx.fillText(text, x, y);
 }
-function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, colors = ['white', 'lightgray', 'gray'], selected = false, align) {
+function writeMenuText(text, anchor, offset = {
+        x: 0,
+        y: 0
+    }, fontMod = 1, colors = ['white', 'lightgray', 'gray'], selected = false, align) {
     // Extract colors from the array with defaults
     const [normalColor, hoverColor, clickColor] = colors;
 
@@ -479,7 +487,7 @@ function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, color
     const canvasWidth = ctx.canvas.width;
     const canvasHeight = ctx.canvas.height;
 
-    const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
+    const textHeight = fontSize; // Simplified approximation of text height (based on font size)
 
     let x = 0;
     let y = 0;
@@ -495,11 +503,11 @@ function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, color
 
     // Handle vertical anchor points
     if (anchor.includes('top')) {
-        y = textHeight;  // Start at text height since y refers to the baseline
+        y = textHeight; // Start at text height since y refers to the baseline
     } else if (anchor.includes('center')) {
         y = canvasHeight / 2 + textHeight / 2;
     } else if (anchor.includes('bottom')) {
-        y = canvasHeight - textHeight / 4;  // Adjust to leave some space for descenders
+        y = canvasHeight - textHeight / 4; // Adjust to leave some space for descenders
     }
 
     // Apply offsets to x and y
@@ -523,7 +531,7 @@ function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, color
 
     if (selected || isSelected) {
         // Highlight the item as selected (keyboard or mouse hover)
-        currentColor = clickColor;  // You can use the clickColor for selection or define a special selectedColor if desired
+        currentColor = clickColor; // You can use the clickColor for selection or define a special selectedColor if desired
     } else if (isSelected && isClicking) {
         currentColor = clickColor;
     } else if (isSelected) {
@@ -536,17 +544,20 @@ function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, color
     // Return an object with isSelected and isClicked status
     return {
         isSelected: isSelected || selected, // True if the item is selected (by keyboard or hover)
-        isClicked: isSelected && isClicking  // True if the item is clicked
+        isClicked: isSelected && isClicking // True if the item is clicked
     };
 }
 
-let backButton = new ImageObject("BackButton", {x: canvas.width - 300, y: 300}, 0.25);
+let backButton = new ImageObject("BackButton", {
+    x: canvas.width - 300,
+    y: 300
+}, 0.25);
 
 let escapeKeyDown = new KeyboardEvent('keydown', {
     key: 'Escape',
     code: 'Escape',
-    keyCode: 27,    // Key code for the Escape key
-    which: 27,      // Also for the Escape key
+    keyCode: 27, // Key code for the Escape key
+    which: 27, // Also for the Escape key
     bubbles: true,
     cancelable: true
 });
@@ -554,23 +565,22 @@ let escapeKeyDown = new KeyboardEvent('keydown', {
 let escapeKeyUp = new KeyboardEvent('keyup', {
     key: 'Escape',
     code: 'Escape',
-    keyCode: 27,    // Key code for the Escape key
-    which: 27,      // Also for the Escape key
+    keyCode: 27, // Key code for the Escape key
+    which: 27, // Also for the Escape key
     bubbles: true,
     cancelable: true
 });
 
 // Simulate holding the Escape key for a short duration
-backButton.onClick = function() {
+backButton.onClick = function () {
     // Dispatch the keydown (holding) event
     document.dispatchEvent(escapeKeyDown);
-    
+
     // Simulate holding the key by delaying the keyup event
-    setTimeout(function() {
+    setTimeout(function () {
         document.dispatchEvent(escapeKeyUp); // Release the key after 500ms
     }, 500); // Adjust the time as needed
 };
-
 
 function drawRemainingShields() {
     const iconSize = 40; // Size of the shield icons
@@ -604,7 +614,10 @@ let titleOpacity = 0; // Opacity for fading effect
 let titleY = -100; // Starting Y position for the title (off-screen)
 let titleSpeed = 1.5; // Speed for panning down the title
 
-let playerShipImage = new ImageObject(player.ship.imgName, {x:canvas.width/2,y:canvas.height/2+255});
+let playerShipImage = new ImageObject(player.ship.imgName, {
+    x: canvas.width / 2,
+    y: canvas.height / 2 + 255
+});
 playerShipImage.onClick = nextShip;
 playerShipImage.scale = 0.5;
 
@@ -613,7 +626,7 @@ function anyOptionClicked() {
     return optionClicked.some(element => element === true);
 }
 // Function to draw the main menu
-function drawMainMenu() {	
+function drawMainMenu() {
     optionClicked = [];
     // Animate the title panning down and fading in
     if (titleY < canvas.height / 4) {
@@ -631,136 +644,171 @@ function drawMainMenu() {
         y: titleY
     }, 4, "white");
     ctx.restore();
-	
-	playerShipImage.moveToPoint({x:canvas.width/2 - 40,y:canvas.height/2+255});
-	playerShipImage.draw();
-	
+
+    playerShipImage.moveToPoint({
+        x: canvas.width / 2 - 40,
+        y: canvas.height / 2 + 255
+    });
+    playerShipImage.draw();
+
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < mainMenuOptions.length; i++) {
-		let result = writeMenuText(mainMenuOptions[i], "center", {
+        let result = writeMenuText(mainMenuOptions[i], "center", {
             x: 0,
             y: i * 60
         }, 1.6, textButtonColors, selectedMenuOption === i)
-        selectedMenuOption = result.isSelected ? i : selectedMenuOption;
-		optionClicked[i] = result.isClicked;
+            selectedMenuOption = result.isSelected ? i : selectedMenuOption;
+        optionClicked[i] = result.isClicked;
     }
-	
-	
-	let base = {x: canvas.width/2, y: canvas.height/2+255};
-	let r = 1;
-	let rh = 20;
-	let shipOffset = {x: 30, y: -50};
-	let colOffset = 80;
-	let fontScaler = 1.2;
-	
-	writeText(player.ship.name, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y}, fontScaler, "yellow", "left");
-	
-	writeText(`Speed:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
-	writeText(`${player.ship.speed}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
-	
-	writeText(`Steer:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
-	writeText(`${player.ship.steering}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
-	
-	writeText(`Health:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
-	writeText(`${player.ship.health}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
-	
-	writeText(`Size:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
-	writeText(`${player.ship.size}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
-	
-	
+
+    let base = {
+        x: canvas.width / 2,
+        y: canvas.height / 2 + 255
+    };
+    let r = 1;
+    let rh = 20;
+    let shipOffset = {
+        x: 30,
+        y: -50
+    };
+    let colOffset = 80;
+    let fontScaler = 1.2;
+
+    writeText(player.ship.name, "top-left", {
+        x: base.x + shipOffset.x,
+        y: base.y + shipOffset.y
+    }, fontScaler, "yellow", "left");
+
+    writeText(`Speed:`, "top-left", {
+        x: base.x + shipOffset.x,
+        y: base.y + shipOffset.y + rh * r
+    }, fontScaler, "white", "left");
+    writeText(`${player.ship.speed}`, "top-left", {
+        x: base.x + shipOffset.x + colOffset,
+        y: base.y + shipOffset.y + rh * r++
+    }, fontScaler, "white", "left");
+
+    writeText(`Steer:`, "top-left", {
+        x: base.x + shipOffset.x,
+        y: base.y + shipOffset.y + rh * r
+    }, fontScaler, "white", "left");
+    writeText(`${player.ship.steering}`, "top-left", {
+        x: base.x + shipOffset.x + colOffset,
+        y: base.y + shipOffset.y + rh * r++
+    }, fontScaler, "white", "left");
+
+    writeText(`Health:`, "top-left", {
+        x: base.x + shipOffset.x,
+        y: base.y + shipOffset.y + rh * r
+    }, fontScaler, "white", "left");
+    writeText(`${player.ship.health}`, "top-left", {
+        x: base.x + shipOffset.x + colOffset,
+        y: base.y + shipOffset.y + rh * r++
+    }, fontScaler, "white", "left");
+
+    writeText(`Size:`, "top-left", {
+        x: base.x + shipOffset.x,
+        y: base.y + shipOffset.y + rh * r
+    }, fontScaler, "white", "left");
+    writeText(`${player.ship.size}`, "top-left", {
+        x: base.x + shipOffset.x + colOffset,
+        y: base.y + shipOffset.y + rh * r++
+    }, fontScaler, "white", "left");
+
 }
 
 // Mouse click handling for menu selection
 /*canvas.addEventListener('click', function (event) {
-    if (isMainMenu) {
-        const clickX = event.clientX;
-        const clickY = event.clientY;
+if (isMainMenu) {
+const clickX = event.clientX;
+const clickY = event.clientY;
 
-        // Check if any of the menu options were clicked
-        for (let i = 0; i < mainMenuOptions.length; i++) {
-            const optionY = canvas.height / 2 + i * 60;
-            if (clickY > optionY - 20 && clickY < optionY + 20) {
-                selectedMenuOption = i;
-					switch (whatToDraw) {
-						case "Main": {
-								handleMenuSelection(true);
-								break;
-							}
-						case "Game": {
-								//handleGameOptionsSelection(true);
-								break;
-							}
-							case "Options": {
-								handleGameOptionsSelection(true);
-								break;
-							}
-							case "Leaderboard": {
-								handleLeaderboardSelection(true);
-								break;
-							}
-							case "NameInput": {
-								break;
-							}
-							
-						}
-				
-            }
-        }
-    }
+// Check if any of the menu options were clicked
+for (let i = 0; i < mainMenuOptions.length; i++) {
+const optionY = canvas.height / 2 + i * 60;
+if (clickY > optionY - 20 && clickY < optionY + 20) {
+selectedMenuOption = i;
+switch (whatToDraw) {
+case "Main": {
+handleMenuSelection(true);
+break;
+}
+case "Game": {
+//handleGameOptionsSelection(true);
+break;
+}
+case "Options": {
+handleGameOptionsSelection(true);
+break;
+}
+case "Leaderboard": {
+handleLeaderboardSelection(true);
+break;
+}
+case "NameInput": {
+break;
+}
+
+}
+
+}
+}
+}
 });*/
 
 let selectOptionCooldown = 0;
 let selectOptionTimer = 30;
 function optionCooldown() {
-	selectOptionCooldown = selectOptionTimer;
+    selectOptionCooldown = selectOptionTimer;
 }
 function isSelectOnCooldown() {
-	return selectOptionCooldown > 0;
+    return selectOptionCooldown > 0;
 }
 
 // Event listener for keyboard menu navigation
-function changeMenuOption(menuOptions, selectedMenuOption){
-	if (isSelectOnCooldown()) return selectedMenuOption;
-	if (up) {
-		console.log(menuOptions)
-		console.log("up")
-		selectedMenuOption = (selectedMenuOption - 1 + menuOptions.length) % menuOptions.length; // Navigate up
-		optionCooldown();
-	} else if (down) {
-		console.log("down")
-		selectedMenuOption = (selectedMenuOption + 1) % menuOptions.length; // Navigate down
-		optionCooldown();
-	}
-	return selectedMenuOption;
+function changeMenuOption(menuOptions, selectedMenuOption) {
+    if (isSelectOnCooldown())
+        return selectedMenuOption;
+    if (up) {
+        console.log(menuOptions)
+        console.log("up")
+        selectedMenuOption = (selectedMenuOption - 1 + menuOptions.length) % menuOptions.length; // Navigate up
+        optionCooldown();
+    } else if (down) {
+        console.log("down")
+        selectedMenuOption = (selectedMenuOption + 1) % menuOptions.length; // Navigate down
+        optionCooldown();
+    }
+    return selectedMenuOption;
 };
 // Handle menu selection based on current option
 function handleMenuSelection(fromClick = false) {
-	console.log("from click:", fromClick)
-	if (isSelectOnCooldown()) return;
-	if (enter || anyOptionClicked()) {
-    if (selectedMenuOption === 0) {
-		optionCooldown()
-        startGame(); // Start the game
-        isMainMenu = false; // Exit the menu
-    } else if (selectedMenuOption === 1) {
-			showOptions();
-			optionCooldown()
-    } else if (selectedMenuOption === 2) {
-			showLeaderboard();
-			optionCooldown()
+    console.log("from click:", fromClick)
+    if (isSelectOnCooldown())
+        return;
+    if (enter || anyOptionClicked()) {
+        if (selectedMenuOption === 0) {
+            optionCooldown()
+            startGame(); // Start the game
+            isMainMenu = false; // Exit the menu
+        } else if (selectedMenuOption === 1) {
+            showOptions();
+            optionCooldown()
+        } else if (selectedMenuOption === 2) {
+            showLeaderboard();
+            optionCooldown()
+        }
     }
-	}
 }
-
 
 let selectedGameOption = 0; // 0 for "Start Game", 1 for "Options"
 let gameOptions = [];
 
 function drawOptionsMenu() {
-	let muted = audioPlayer.muteMusic ? "X" : "O";
-	let mVol = (audioPlayer.musicVolume * 100).toFixed(0) + " %";
-	let sVol = (audioPlayer.sfxVolume * 100).toFixed(0) + " %";
-	gameOptions = ["Mute Audio: " + muted, "Music Volume: " + mVol, "SFX Volume: " + sVol];
+    let muted = audioPlayer.muteMusic ? "X" : "O";
+    let mVol = (audioPlayer.musicVolume * 100).toFixed(0) + " %";
+    let sVol = (audioPlayer.sfxVolume * 100).toFixed(0) + " %";
+    gameOptions = ["Mute Audio: " + muted, "Music Volume: " + mVol, "SFX Volume: " + sVol];
     ctx.save();
     writeText("Asteroider", "top-center", {
         x: 0,
@@ -775,143 +823,174 @@ function drawOptionsMenu() {
             y: i * 60
         }, 1.6, textButtonColors, selectedGameOption === i).isSelected ? i : selectedGameOption;
     }
-	backButton.moveToPoint({x:canvas.width - 50,y: 50});
-	backButton.draw();
+    backButton.moveToPoint({
+        x: canvas.width - 50,
+        y: 50
+    });
+    backButton.draw();
 }
 
 function handleGameOptionsSelection(fromClick = false) {
-	if (isSelectOnCooldown()) return;
-	console.log(3)
-	
+    if (isSelectOnCooldown())
+        return;
+    console.log(3)
+
     if ((enter || isClicking) && selectedGameOption === 0) {
         audioPlayer.toggleMuteAll();
-		 optionCooldown();
+        optionCooldown();
     } else if (selectedGameOption === 1) {
-			if (left) {
-				optionCooldown();
-				audioPlayer.changeVolume("music", -0.1);
-			} else if (right) {
-				optionCooldown();
-				audioPlayer.changeVolume("music", 0.1);
-			} 
+        if (left) {
+            optionCooldown();
+            audioPlayer.changeVolume("music", -0.1);
+        } else if (right) {
+            optionCooldown();
+            audioPlayer.changeVolume("music", 0.1);
+        }
     } else if (selectedGameOption === 2) {
-			if (left) {
-				optionCooldown();
-				audioPlayer.changeVolume("sfx", -0.1);
-			} else if (right) {
-				optionCooldown();
-				audioPlayer.changeVolume("sfx", 0.1);
-			}
+        if (left) {
+            optionCooldown();
+            audioPlayer.changeVolume("sfx", -0.1);
+        } else if (right) {
+            optionCooldown();
+            audioPlayer.changeVolume("sfx", 0.1);
+        }
     }
-	if (esc) {
-		optionCooldown();
-		showMainMenu();
-	}	
+    if (esc) {
+        optionCooldown();
+        showMainMenu();
+    }
 }
 
 function drawLeaderboard() {
-  if (leaderboard.length === 0) {
-    console.log("No leaderboard data available to draw.");
-    return;
-  }
-	drawRectangle(canvas.width / 2, canvas.height / 2, canvas.width - 50, canvas.height - 50, "black", 0.6);
-  ctx.save();
-  let titleY = 50;
+    if (leaderboard.length === 0) {
+        console.log("No leaderboard data available to draw.");
+        return;
+    }
+    drawRectangle(canvas.width / 2, canvas.height / 2, canvas.width - 50, canvas.height - 50, "black", 0.6);
+    ctx.save();
+    let titleY = 50;
 
-  // Draw the title for the leaderboard
-  let titleText = isGameOver ? "Gameover!" : "Leaderboard";
-  let titleColor = isGameOver ? "red" : "yellow";
-  writeText(titleText, "top-center", {
-    x: 0,
-    y: titleY
-  }, 2, titleColor);
+    // Draw the title for the leaderboard
+    let titleText = isGameOver ? "Gameover!" : "Leaderboard";
+    let titleColor = isGameOver ? "red" : "yellow";
+    writeText(titleText, "top-center", {
+        x: 0,
+        y: titleY
+    }, 2, titleColor);
 
-  ctx.restore();
+    ctx.restore();
 
-  // Set the starting Y position for the leaderboard items
-  let startY = isMobile ? titleY + 100 : titleY + 140; // Some space below the title
+    // Set the starting Y position for the leaderboard items
+    let startY = isMobile ? titleY + 100 : titleY + 140; // Some space below the title
 
-  // Calculate column positions based on canvas width for dynamic alignment
-  let canvasWidth = canvas.width;
-  
-  let col0Start = canvasWidth * 0.2;  // Rank column (10% of the canvas width)
-  let col1Start = canvasWidth * 0.23;  // Name column (20% of the canvas width)
-  let col2Start = canvasWidth * 0.5;  // Ship column (50% of the canvas width)
-  let col3Start = canvasWidth * 0.8;  // Score column (80% of the canvas width)
+    // Calculate column positions based on canvas width for dynamic alignment
+    let canvasWidth = canvas.width;
 
-  let rowHeight = isMobile ? 20 : 25;  // Adjust row height for better readability
-  let fontSize = 1;
-  let color = "white";
+    let col0Start = canvasWidth * 0.2; // Rank column (10% of the canvas width)
+    let col1Start = canvasWidth * 0.23; // Name column (20% of the canvas width)
+    let col2Start = canvasWidth * 0.5; // Ship column (50% of the canvas width)
+    let col3Start = canvasWidth * 0.8; // Score column (80% of the canvas width)
 
-  // Track if the player is part of the top 25
-  let playerInTop25 = false;
-	let subtitle = isGameOver ? `Final score: ${score}` : "Leaderboard entries: " + leaderboard.length;
-  writeText(subtitle, "top-center", { x: 0, y: startY - rowHeight * 2 }, fontSize, "yellow");
+    let rowHeight = isMobile ? 20 : 25; // Adjust row height for better readability
+    let fontSize = 1;
+    let color = "white";
 
-  // Draw the top 25 leaderboard entries
-  for (let i = 0; i < Math.min(25, leaderboard.length); i++) {
-    const entry = leaderboard[i];
-    const rank = i + 1;
+    // Track if the player is part of the top 25
+    let playerInTop25 = false;
+    let subtitle = isGameOver ? `Final score: ${score}` : "Leaderboard entries: " + leaderboard.length;
+    writeText(subtitle, "top-center", {
+        x: 0,
+        y: startY - rowHeight * 2
+    }, fontSize, "yellow");
 
-    // Highlight current player's entry in yellow
-    if (entry.name === player.name) {
-      color = "yellow";
-      playerInTop25 = true;
-    } else {
-      color = "white";
+    // Draw the top 25 leaderboard entries
+    for (let i = 0; i < Math.min(25, leaderboard.length); i++) {
+        const entry = leaderboard[i];
+        const rank = i + 1;
+
+        // Highlight current player's entry in yellow
+        if (entry.name === player.name) {
+            color = "yellow";
+            playerInTop25 = true;
+        } else {
+            color = "white";
+        }
+
+        // Draw the text for each entry, align columns dynamically based on the canvas width
+        writeText(rank + ".", "left", {
+            x: col0Start,
+            y: startY + i * rowHeight
+        }, fontSize, color, "right");
+        writeText(entry.name, "left", {
+            x: col1Start,
+            y: startY + i * rowHeight
+        }, fontSize, color, "left");
+        writeText(entry.ship, "left", {
+            x: col2Start,
+            y: startY + i * rowHeight
+        }, fontSize, color, "left");
+        writeText(entry.score, "left", {
+            x: col3Start,
+            y: startY + i * rowHeight
+        }, fontSize, color, "right");
     }
 
-    // Draw the text for each entry, align columns dynamically based on the canvas width
-    writeText(rank + ".", "left", { x: col0Start, y: startY + i * rowHeight }, fontSize, color, "right");
-    writeText(entry.name, "left", { x: col1Start, y: startY + i * rowHeight }, fontSize, color, "left");
-    writeText(entry.ship, "left", { x: col2Start, y: startY + i * rowHeight }, fontSize, color, "left");
-    writeText(entry.score, "left", { x: col3Start, y: startY + i * rowHeight }, fontSize, color, "right");
-  }
+    // If the player is not in the top 25, display them at the bottom with their correct rank
+    if (!playerInTop25) {
+        // Find the player's position in the leaderboard
+        const playerIndex = leaderboard.findIndex(entry => entry.name === player.name);
 
-  // If the player is not in the top 25, display them at the bottom with their correct rank
-  if (!playerInTop25) {
-    // Find the player's position in the leaderboard
-    const playerIndex = leaderboard.findIndex(entry => entry.name === player.name);
+        if (playerIndex !== -1) {
+            const playerEntry = leaderboard[playerIndex];
+            const playerRank = playerIndex + 1; // Player rank is their index + 1
 
-    if (playerIndex !== -1) {
-      const playerEntry = leaderboard[playerIndex];
-      const playerRank = playerIndex + 1;  // Player rank is their index + 1
+            // Add some extra space to place the player's entry below the top 25
+            const playerY = startY + 26 * rowHeight; // Place player's entry one row below the top 25
 
-      // Add some extra space to place the player's entry below the top 25
-      const playerY = startY + 26 * rowHeight; // Place player's entry one row below the top 25
-
-      // Draw the player's entry with the correct rank
-      writeText(playerRank + ".", "left", { x: col0Start, y: playerY }, fontSize, "yellow", "right");
-      writeText(playerEntry.name, "left", { x: col1Start, y: playerY }, fontSize, "yellow", "left");
-      writeText(playerEntry.ship, "left", { x: col2Start, y: playerY }, fontSize, "yellow", "left");
-      writeText(playerEntry.score, "left", { x: col3Start, y: playerY }, fontSize, "yellow", "right");
+            // Draw the player's entry with the correct rank
+            writeText(playerRank + ".", "left", {
+                x: col0Start,
+                y: playerY
+            }, fontSize, "yellow", "right");
+            writeText(playerEntry.name, "left", {
+                x: col1Start,
+                y: playerY
+            }, fontSize, "yellow", "left");
+            writeText(playerEntry.ship, "left", {
+                x: col2Start,
+                y: playerY
+            }, fontSize, "yellow", "left");
+            writeText(playerEntry.score, "left", {
+                x: col3Start,
+                y: playerY
+            }, fontSize, "yellow", "right");
+        }
     }
-  }
-  if (isGameOver) {
-	  writeText(restartMessage, "top-center", {
+    if (isGameOver) {
+        writeText(restartMessage, "top-center", {
             x: 0,
             y: startY + 27 * rowHeight
         }, 0.9, "green", "center");
-  }
+    }
 }
 
-
 function handleLeaderboardSelection(fromClick = false) {
-	if (isSelectOnCooldown()) return;
-	if (esc || isClicking) {
-		optionCooldown();
-		showMainMenu();
-	}	
+    if (isSelectOnCooldown())
+        return;
+    if (esc || isClicking) {
+        optionCooldown();
+        showMainMenu();
+    }
 }
 
 function showMainMenu() {
-	whatToDraw = "Main";
+    whatToDraw = "Main";
 }
 function showOptions() {
-	whatToDraw = "Options";
+    whatToDraw = "Options";
 }
 function showLeaderboard() {
-	whatToDraw = "Leaderboard";
+    whatToDraw = "Leaderboard";
 }
 
 let gameoverMessage = "Game Over!";
@@ -919,15 +998,13 @@ let restartMessage = "Press R or tap to Restart";
 
 function drawGame() {
     drawBackground();
-	
+
     if (isGameOver) {
-		if (player.name == undefined) {
-			drawModal();
-		}
+        if (player.name == undefined) {
+            drawModal();
+        }
         drawPlayer();
-	} else {
-		
-	}
+    } else {}
     updateParticles();
     drawObstacles();
     drawShields();
@@ -941,12 +1018,15 @@ function drawGame() {
             x: 35,
             y: 80
         }, 2, "yellow");
-		backButton.moveToPoint({x:canvas.width - 50,y: 50});
-		backButton.draw();
-	}
+        backButton.moveToPoint({
+            x: canvas.width - 50,
+            y: 50
+        });
+        backButton.draw();
+    }
 
     if (isGameOver) {
-		drawLeaderboard();
+        drawLeaderboard();
     }
 
     // Draw the joystick if active
@@ -954,14 +1034,14 @@ function drawGame() {
 }
 
 function drawGameTestTexts() {
-	let i = 1;
-	let rowHeight = 24;
-	let yOffset = 10;
-	writeText(`Version: ${gameVersion}`,"top-right", {
+    let i = 1;
+    let rowHeight = 24;
+    let yOffset = 10;
+    writeText(`Version: ${gameVersion}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 0.4);
-	writeText(`particles: ${particles.length}`, "top-right", {
+    writeText(`particles: ${particles.length}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 0.4);
@@ -973,44 +1053,50 @@ function drawGameTestTexts() {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 0.4);
-	writeText(`Mobile: ${isMobile}`, "top-right", {
+    writeText(`Mobile: ${isMobile}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
     }, 0.4);
 }
-let logo = new ImageObject("logo", {x:canvas.width/2,y:canvas.height/2-55});
+let logo = new ImageObject("logo", {
+    x: canvas.width / 2,
+    y: canvas.height / 2 - 55
+});
 logo.scale = 0.01;
 isMobile ? logo.scaleToSize(0.25, 1000) : logo.scaleToSize(0.25, 1000);
 let startMusicInt = 0;
 function gameLoop(currentTime) {
-	
-	checkMouseMovedRecently();
+
+    checkMouseMovedRecently();
     requestAnimationFrame(gameLoop); // Continue the loop
-	isMobile = 'ontouchstart' in window;
-	fontScale = 0.6;
+    isMobile = 'ontouchstart' in window;
+    fontScale = 0.6;
     // Calculate the time difference between the current frame and the last frame
     let elapsedTime = currentTime - lastFrameTime;
 
     // If enough time has passed since the last frame (based on the FPS cap)
     if (elapsedTime > fpsInterval) {
-		selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
-		
+        selectOptionCooldown = Math.max(selectOptionCooldown - 1, 0);
+
         // Adjust for any slight time deviation
         lastFrameTime = currentTime - (elapsedTime % fpsInterval);
 
         // Update and render the game
         resizeCanvasToWindow();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-			
-			if (whatToDraw != "Game") {
-				drawBackground();
-				logo.moveToPoint({x:canvas.width/2,y:canvas.height/2-55});
-				logo.draw();
-			}
+
+        if (whatToDraw != "Game") {
+            drawBackground();
+            logo.moveToPoint({
+                x: canvas.width / 2,
+                y: canvas.height / 2 - 55
+            });
+            logo.draw();
+        }
         switch (whatToDraw) {
         case "Main": {
-					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
-					handleMenuSelection();
+                selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
+                handleMenuSelection();
                 drawMainMenu();
                 handleGamepadInput();
                 break;
@@ -1019,63 +1105,70 @@ function gameLoop(currentTime) {
                 keepPlayerInBounds();
                 drawGame();
                 updateGame();
-					if (showModal) {
-						drawModal();
-					}
-					if (isGameOver && restart && !showModal) {
-						startGame();
-					}
+                if (showModal) {
+                    drawModal();
+                }
+                if (isGameOver && restart && !showModal) {
+                    startGame();
+                }
                 break;
             }
-			case "Options": {
-					selectedGameOption = changeMenuOption(gameOptions, selectedGameOption);
-					handleGameOptionsSelection();
+        case "Options": {
+                selectedGameOption = changeMenuOption(gameOptions, selectedGameOption);
+                handleGameOptionsSelection();
                 drawOptionsMenu();
                 break;
             }
-			case "Leaderboard": {
-					handleLeaderboardSelection();
-                drawLeaderboard();				
+        case "Leaderboard": {
+                handleLeaderboardSelection();
+                drawLeaderboard();
                 break;
             }
-			case "NameInput": {
+        case "NameInput": {
                 drawModal();
                 break;
             }
-			
+
         }
 
         // Calculate and display FPS
         calculateAndDisplayFPS(currentTime);
-		  //drawGameTestTexts();
-		  if (whatToDraw != "Game") {
-			  writeText(`Bishiba @ Patreon`, "bottom-left", {
-				x: 3,
-				y: 0
-			}, 1, "white");
-        writeText(`version: ${gameVersion}`, "bottom-right", {
-				x: -3,
-				y: 0
-			}, 1, "white");
-		  }
-		  if (false) {
-			  
-		  writeText(`optionClicked: ${optionClicked}`, "bottom-right", {
-				x: -3,
-				y: -50
-			}, 1, "white");
-			writeText(`selectedMenuOption: ${selectedMenuOption}`, "bottom-right", {
-				x: -3,
-				y: -100
-			}, 1, "white");
-		  }
+        //drawGameTestTexts();
+        if (whatToDraw != "Game") {
+            if (player.name != undefined) {
+                writeText(`Pilot: ${player.name}`, "top-left", {
+                    x: 8,
+                    y: 8
+                }, 0.8);
+            }
+            writeText(`Bishiba @ Patreon`, "bottom-left", {
+                x: 3,
+                y: 0
+            }, 1, "white");
+            writeText(`version: ${gameVersion}`, "bottom-right", {
+                x: -3,
+                y: 0
+            }, 1, "white");
+        }
+        if (false) {
+
+            writeText(`optionClicked: ${optionClicked}`, "bottom-right", {
+                x: -3,
+                y: -50
+            }, 1, "white");
+            writeText(`selectedMenuOption: ${selectedMenuOption}`, "bottom-right", {
+                x: -3,
+                y: -100
+            }, 1, "white");
+        }
     }
 }
 
 // Function to update the game (separated for clarity)
 function updateGame() {
-	if (esc && !showModal) whatToDraw = "Main";
-	 calculateTimeMod();
+    if (esc && !showModal)
+        whatToDraw = "Main";
+    calculateTimeMod();
     if (!isGameOver) {
         time++;
         if (time % (Math.floor(30 / timeScale)) == 0)
@@ -1141,27 +1234,27 @@ function keepPlayerInBounds(margin = 20) {
 let restartInt = 0;
 // Start the game function
 function setupGame() {
-	console.log(player.name);
-	createStars();
+    console.log(player.name);
+    createStars();
     audioPlayer.setMasterVolume(0.3);
     canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
-	
-	 setupKeyListeners()
+
+    setupKeyListeners()
     gameLoop();
 }
 function setPlayerName() {
-	getLeaderboard();
-	Managers.Cache.load("playerName").then(data => {
-		if (data != undefined) {
-			player.name = data.name;
-		}
-		setupGame();
-	});
+    getLeaderboard();
+    Managers.Cache.load("playerName").then(data => {
+        if (data != undefined) {
+            player.name = data.name;
+        }
+        setupGame();
+    });
 }
 function startGame() {
-	whatToDraw = "Game";
-	setCurrentRecord();
+    whatToDraw = "Game";
+    setCurrentRecord();
     canvas.removeEventListener('mousedown', startGame);
     canvas.removeEventListener('touchstart', startGame);
     canvas.addEventListener('mousedown', startJoystick);
@@ -1179,11 +1272,11 @@ function startGame() {
     particles = [];
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-	createStars();
+    createStars();
 }
 
 function setMainState() {
-	canvas.addEventListener('mousedown', startJoystick);
+    canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
 }
 
@@ -1193,10 +1286,9 @@ function lerp(start, end, amount) {
 
 function updatePlayerPosition() {
     const angleEaseSpeed = 0.1; // Adjust this for the desired easing speed
-    const maxAngle = 0.4	; // Use the maxAngle property of the player, default to 0.3 if undefined
-	const sideMax = 1.4 * player.ship.steering;
-	const thrust = 1 * player.ship.speed;
-	
+    const maxAngle = 0.4; // Use the maxAngle property of the player, default to 0.3 if undefined
+    const sideMax = 1.4 * player.ship.steering;
+    const thrust = 1 * player.ship.speed;
 
     // Keyboard movement
     if (left) {
@@ -1273,13 +1365,23 @@ let maxTextInput = 8;
 
 // Draw the modal with "MESSAGE" and the input area
 function drawModal() {
-	drawRectangle(canvas.width / 2, canvas.height / 2, 300, 200, "black", 0.9);
-	writeText(modalTextPrompt, 'center', {x: 0, y: -35}, 2, "white");
+    drawRectangle(canvas.width / 2, canvas.height / 2, 300, 200, "black", 0.9);
+    writeText(modalTextPrompt, 'center', {
+        x: 0,
+        y: -35
+    }, 2, "white");
 
-	let displayText = inputStr;
-	if (allCaps) displayText = displayText.toUpperCase();
-	writeText(displayText.padEnd(maxTextInput, '_'), 'center', {x: 0, y: 0}, 2, "yellow");
-	writeText("For online leaderboard", 'center', {x: 0, y: 50}, 1.4);
+    let displayText = inputStr;
+    if (allCaps)
+        displayText = displayText.toUpperCase();
+    writeText(displayText.padEnd(maxTextInput, '_'), 'center', {
+        x: 0,
+        y: 0
+    }, 2, "yellow");
+    writeText("For online leaderboard", 'center', {
+        x: 0,
+        y: 50
+    }, 1.4);
 }
 let showModal = false;
 function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
@@ -1297,11 +1399,11 @@ function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
         hiddenInput.type = 'text';
         hiddenInput.maxLength = maxInput;
         hiddenInput.style.position = 'absolute';
-        hiddenInput.style.opacity = '0';  // Make the input invisible
-        hiddenInput.style.pointerEvents = 'none';  // Disable interactions
-        hiddenInput.style.zIndex = '-1';  // Send it to the back of the stack
+        hiddenInput.style.opacity = '0'; // Make the input invisible
+        hiddenInput.style.pointerEvents = 'none'; // Disable interactions
+        hiddenInput.style.zIndex = '-1'; // Send it to the back of the stack
         document.body.appendChild(hiddenInput);
-        
+
         // Focus on the hidden input if the user clicks on the canvas
         canvas.addEventListener('click', () => {
             hiddenInput.focus();
@@ -1310,14 +1412,16 @@ function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
         // Sync hidden input with inputStr and handle mobile input
         hiddenInput.addEventListener('input', () => {
             inputStr = hiddenInput.value.slice(0, maxInput); // Limit input to maxInput length
-            if (allCaps) inputStr = inputStr.toUpperCase();
+            if (allCaps)
+                inputStr = inputStr.toUpperCase();
         });
     }
 
     // Handle key inputs for PC (or mobile if virtual keyboard is not needed)
     function handleKeyInput(event) {
         if (event.key === 'Enter') {
-				if (inputStr.length == 0) return;
+            if (inputStr.length == 0)
+                return;
             document.removeEventListener('keydown', handleKeyInput);
             if (isMobile && hiddenInput) {
                 document.body.removeChild(hiddenInput); // Clean up the hidden input for mobile
@@ -1325,16 +1429,18 @@ function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
             }
             isModalActive = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            Managers.Cache.save("playerName", { name: inputStr }, "playerData");
+            Managers.Cache.save("playerName", {
+                name: inputStr
+            }, "playerData");
             whatToDraw = "Game";
             optionCooldown();
-			  showModal = false;
-			  callback(inputStr);
+            showModal = false;
+            callback(inputStr);
         }
         if (event.key === 'Backspace') {
             inputStr = inputStr.slice(0, -1); // Remove last character
         } else if (inputStr.length < maxInput && /^[a-zA-Z]$/.test(event.key)) {
-				console.log(event.key);
+            console.log(event.key);
             inputStr += allCaps ? event.key.toUpperCase() : event.key; // Add character to inputStr
         }
     }
@@ -1346,14 +1452,13 @@ function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
     function handleCanvasClick() {
         hiddenInput.focus();
     }
-    
+
     if (isMobile) {
         // On mobile, focus on the input when the canvas is clicked
         canvas.addEventListener('click', handleCanvasClick);
     }
-	showModal = true;
+    showModal = true;
 }
-
 
 let mouseMoved = false;
 let lastMouseMoveTime = 0;
@@ -1383,7 +1488,7 @@ canvas.addEventListener('mousemove', function (event) {
 // Function to check if the mouse has moved within the last `mouseMoveCheckDuration` milliseconds
 function checkMouseMovedRecently() {
     const currentTime = Date.now();
-    
+
     // Check if the mouse moved in the last `mouseMoveCheckDuration` ms
     if (currentTime - lastMouseMoveTime <= mouseMoveCheckDuration) {
         return true;
@@ -1392,7 +1497,6 @@ function checkMouseMovedRecently() {
         return false;
     }
 }
-
 
 let isClicking = false;
 let left = false;
@@ -1404,7 +1508,6 @@ let esc = false;
 let space = false;
 let restart = false;
 
-
 function setupKeyListeners() {
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
@@ -1413,82 +1516,82 @@ function setupKeyListeners() {
 // Handle key down event
 function handleKeyDown(event) {
     switch (event.key) {
-        case 'a':
-        case 'A':
-        case 'ArrowLeft':
-            left = true;
-            break;
-        case 'd':
-        case 'D':
-        case 'ArrowRight':
-            right = true;
-            break;
-        case 'w':
-        case 'W':
-        case 'ArrowUp':
-            up = true;
-            break;
-        case 's':
-        case 'S':
-        case 'ArrowDown':
-            down = true;
-            break;
-        case 'Enter':
-            enter = true;
-            break;
-        case 'Escape':
-            esc = true;
-            break;
-        case ' ':
-            space = true;
-            break;
-        case 'r':
-        case 'R':
-            restart = true;
-            break;
-        default:
-            break;
+    case 'a':
+    case 'A':
+    case 'ArrowLeft':
+        left = true;
+        break;
+    case 'd':
+    case 'D':
+    case 'ArrowRight':
+        right = true;
+        break;
+    case 'w':
+    case 'W':
+    case 'ArrowUp':
+        up = true;
+        break;
+    case 's':
+    case 'S':
+    case 'ArrowDown':
+        down = true;
+        break;
+    case 'Enter':
+        enter = true;
+        break;
+    case 'Escape':
+        esc = true;
+        break;
+    case ' ':
+        space = true;
+        break;
+    case 'r':
+    case 'R':
+        restart = true;
+        break;
+    default:
+        break;
     }
 }
 
 // Handle key up event
 function handleKeyUp(event) {
     switch (event.key) {
-        case 'a':
-        case 'A':
-        case 'ArrowLeft':
-            left = false;
-            break;
-        case 'd':
-        case 'D':
-        case 'ArrowRight':
-            right = false;
-            break;
-        case 'w':
-        case 'W':
-        case 'ArrowUp':
-            up = false;
-            break;
-        case 's':
-        case 'S':
-        case 'ArrowDown':
-            down = false;
-            break;
-        case 'Enter':
-            enter = false;
-            break;
-        case 'Escape':
-            esc = false;
-            break;
-        case ' ':
-            space = false;
-            break;
-        case 'r':
-        case 'R':
-            restart = false;
-            break;
-        default:
-            break;
+    case 'a':
+    case 'A':
+    case 'ArrowLeft':
+        left = false;
+        break;
+    case 'd':
+    case 'D':
+    case 'ArrowRight':
+        right = false;
+        break;
+    case 'w':
+    case 'W':
+    case 'ArrowUp':
+        up = false;
+        break;
+    case 's':
+    case 'S':
+    case 'ArrowDown':
+        down = false;
+        break;
+    case 'Enter':
+        enter = false;
+        break;
+    case 'Escape':
+        esc = false;
+        break;
+    case ' ':
+        space = false;
+        break;
+    case 'r':
+    case 'R':
+        restart = false;
+        break;
+    default:
+        break;
     }
 }
 

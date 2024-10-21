@@ -78,7 +78,7 @@ async function updateLeaderboard(player, score) {
     console.log("New high score! Updating leaderboard...");
 
     // Update Firestore with the new score and ship
-    const newValue = { score: score, ship: player.ship };
+    const newValue = { score: score, ship: player.ship.name };
     await setField(collectionName, docId, fieldName, newValue);
 
     // Immediately update the local leaderboard with the new score
@@ -88,7 +88,7 @@ async function updateLeaderboard(player, score) {
       currentData.ship = player.ship.name;
     } else {
       // If player doesn't exist, add a new entry to the local leaderboard
-      leaderboard.push({ name: player.name, score: score, ship: player.ship });
+      leaderboard.push({ name: player.name, score: score, ship: player.ship.name });
     }
 
     // Sort the local leaderboard after updating
