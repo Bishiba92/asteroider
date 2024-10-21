@@ -1,4 +1,4 @@
-const gameVersion = "1.07";
+const gameVersion = "1.11";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -539,6 +539,38 @@ function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, color
     };
 }
 
+let backButton = new ImageObject("BackButton", {x: canvas.width - 300, y: 300}, 0.25);
+
+let escapeKeyDown = new KeyboardEvent('keydown', {
+    key: 'Escape',
+    code: 'Escape',
+    keyCode: 27,    // Key code for the Escape key
+    which: 27,      // Also for the Escape key
+    bubbles: true,
+    cancelable: true
+});
+
+let escapeKeyUp = new KeyboardEvent('keyup', {
+    key: 'Escape',
+    code: 'Escape',
+    keyCode: 27,    // Key code for the Escape key
+    which: 27,      // Also for the Escape key
+    bubbles: true,
+    cancelable: true
+});
+
+// Simulate holding the Escape key for a short duration
+backButton.onClick = function() {
+    // Dispatch the keydown (holding) event
+    document.dispatchEvent(escapeKeyDown);
+    
+    // Simulate holding the key by delaying the keyup event
+    setTimeout(function() {
+        document.dispatchEvent(escapeKeyUp); // Release the key after 500ms
+    }, 500); // Adjust the time as needed
+};
+
+
 function drawRemainingShields() {
     const iconSize = 40; // Size of the shield icons
     const iconSpacing = 10; // Spacing between the shield icons
@@ -574,8 +606,14 @@ let titleSpeed = 1.5; // Speed for panning down the title
 let playerShipImage = new ImageObject(player.ship.imgName, {x:canvas.width/2,y:canvas.height/2+255});
 playerShipImage.onClick = nextShip;
 playerShipImage.scale = 0.5;
+
+let optionClicked = [];
+function anyOptionClicked() {
+    return optionClicked.some(element => element === true);
+}
 // Function to draw the main menu
 function drawMainMenu() {	
+    optionClicked = [];
     // Animate the title panning down and fading in
     if (titleY < canvas.height / 4) {
         titleY += titleSpeed; // Move the title down
@@ -598,15 +636,19 @@ function drawMainMenu() {
 	
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < mainMenuOptions.length; i++) {
-        selectedMenuOption = writeMenuText(mainMenuOptions[i], "center", {
+		let result = writeMenuText(mainMenuOptions[i], "center", {
             x: 0,
             y: i * 60
-        }, 1.6, textButtonColors, selectedMenuOption === i).isSelected ? i : selectedMenuOption;
+        }, 1.6, textButtonColors, selectedMenuOption === i)
+        selectedMenuOption = result.isSelected ? i : selectedMenuOption;
+		optionClicked[i] = result.isClicked;
     }
+	
+	
 	let base = {x: canvas.width/2, y: canvas.height/2+255};
 	let r = 1;
 	let rh = 20;
-	let shipOffset = {x: 20, y: -50};
+	let shipOffset = {x: 30, y: -50};
 	let colOffset = 60;
 	
 	writeText(player.ship.name, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y}, 1, "yellow", "left");
@@ -627,7 +669,7 @@ function drawMainMenu() {
 }
 
 // Mouse click handling for menu selection
-canvas.addEventListener('click', function (event) {
+/*canvas.addEventListener('click', function (event) {
     if (isMainMenu) {
         const clickX = event.clientX;
         const clickY = event.clientY;
@@ -663,7 +705,7 @@ canvas.addEventListener('click', function (event) {
             }
         }
     }
-});
+});*/
 
 let selectOptionCooldown = 0;
 let selectOptionTimer = 30;
@@ -691,14 +733,15 @@ function changeMenuOption(menuOptions, selectedMenuOption){
 };
 // Handle menu selection based on current option
 function handleMenuSelection(fromClick = false) {
+	console.log("from click:", fromClick)
 	if (isSelectOnCooldown()) return;
-	if (enter || fromClick) {
+	if (enter || anyOptionClicked()) {
     if (selectedMenuOption === 0) {
 		optionCooldown()
         startGame(); // Start the game
         isMainMenu = false; // Exit the menu
     } else if (selectedMenuOption === 1) {
-			isMobile ? showLeaderboard() : showOptions();
+			showOptions();
 			optionCooldown()
     } else if (selectedMenuOption === 2) {
 			showLeaderboard();
@@ -730,14 +773,17 @@ function drawOptionsMenu() {
             y: i * 60
         }, 1.6, textButtonColors, selectedGameOption === i).isSelected ? i : selectedGameOption;
     }
+	backButton.moveToPoint({x:canvas.width - 50,y: 50});
+	backButton.draw();
 }
 
 function handleGameOptionsSelection(fromClick = false) {
 	if (isSelectOnCooldown()) return;
+	console.log(3)
 	
-    if (enter && selectedGameOption === 0) {
+    if ((enter || isClicking) && selectedGameOption === 0) {
         audioPlayer.toggleMuteAll();
-		optionCooldown();
+		 optionCooldown();
     } else if (selectedGameOption === 1) {
 			if (left) {
 				optionCooldown();
@@ -871,11 +917,14 @@ let restartMessage = "Press R or tap to Restart";
 
 function drawGame() {
     drawBackground();
+	
     if (isGameOver) {
 		if (player.name == undefined) {
 			drawModal();
 		}
         drawPlayer();
+	} else {
+		
 	}
     updateParticles();
     drawObstacles();
@@ -885,11 +934,14 @@ function drawGame() {
         drawPlayer();
     drawShieldCircle();
     drawRemainingShields();
-    if (!isGameOver)
+    if (!isGameOver) {
         writeText(score, "top-left", {
             x: 35,
             y: 80
         }, 2, "yellow");
+		backButton.moveToPoint({x:canvas.width - 50,y: 50});
+		backButton.draw();
+	}
 
     if (isGameOver) {
 		drawLeaderboard();
@@ -958,7 +1010,7 @@ function gameLoop(currentTime) {
 					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
 					handleMenuSelection();
                 drawMainMenu();
-                handleGamepadInput(); // Check for gamepad input
+                handleGamepadInput();
                 break;
             }
         case "Game": {
@@ -1006,7 +1058,7 @@ function gameLoop(currentTime) {
 		  }
 		  if (false) {
 			  
-		  writeText(`mouseMoved: ${mouseMoved}`, "bottom-right", {
+		  writeText(`optionClicked: ${optionClicked}`, "bottom-right", {
 				x: -3,
 				y: -50
 			}, 1, "white");
@@ -1020,6 +1072,7 @@ function gameLoop(currentTime) {
 
 // Function to update the game (separated for clarity)
 function updateGame() {
+	if (esc && !showModal) whatToDraw = "Main";
 	 calculateTimeMod();
     if (!isGameOver) {
         time++;
@@ -1127,6 +1180,11 @@ function startGame() {
 	createStars();
 }
 
+function setMainState() {
+	canvas.addEventListener('mousedown', startJoystick);
+    canvas.addEventListener('touchstart', startJoystick);
+}
+
 function lerp(start, end, amount) {
     return start + (end - start) * amount;
 }
@@ -1134,7 +1192,7 @@ function lerp(start, end, amount) {
 function updatePlayerPosition() {
     const angleEaseSpeed = 0.1; // Adjust this for the desired easing speed
     const maxAngle = 0.4	; // Use the maxAngle property of the player, default to 0.3 if undefined
-	const sideMax = 1.4;
+	const sideMax = 1.4 * player.ship.steering;
 	const thrust = 1 * player.ship.speed;
 	
 
