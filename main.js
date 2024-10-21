@@ -109,11 +109,11 @@ function resizeCanvasToWindow() {
     const aspectRatio = 9 / 16;
     
     // Define the max height (800px) for non-mobile
-    const maxHeight = 1200; // Max height for non-mobile
+    const maxHeight = 1800; // Max height for non-mobile
     
     let canvasHeight, canvasWidth;
     
-    if (true) {
+    if (!isMobile) {
         // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
         canvasHeight = Math.min(viewportHeight, maxHeight);
         
@@ -127,6 +127,11 @@ function resizeCanvasToWindow() {
         // For mobile, use full viewport dimensions (no constraints)
         canvas.width = viewportWidth;
         canvas.height = viewportHeight;
+		// Force the height to always be the viewport height or the maxHeight (whichever is smaller)
+        canvasHeight = Math.min(viewportHeight, maxHeight);
+        
+        // Calculate the corresponding width to maintain the 9:16 aspect ratio
+        canvasWidth = canvasHeight * aspectRatio;
     }
 
     // Adjust game logic based on the new canvas size
@@ -142,8 +147,6 @@ function resizeCanvasToWindow() {
     canvas.style.left = '50%';
     canvas.style.transform += ' translateX(-50%)'; // Center the canvas horizontally
 }
-
-
 
 resizeCanvasToWindow();
 addJoystickToCanvas(canvas);
@@ -942,7 +945,7 @@ function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop); // Continue the loop
 	isMobile = 'ontouchstart' in window;
 	fontScale = 0.6;
-    if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
+    if (false && !audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
         console.log("Trying to play music");
         audioPlayer.nextMusic();
     }
