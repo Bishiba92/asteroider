@@ -92,7 +92,10 @@ function xorshift(state) {
 function getRandom() {
     return simpleRNG(time, randomSeed, 0, 1);
 }
+let xsa = 0;
 function resizeCanvasToWindow() {
+	if (xsa == 1)return;
+	xsa = 1;
     const canvas = document.getElementById('gameCanvas');
     
     // Use visualViewport for more accurate sizing on mobile
