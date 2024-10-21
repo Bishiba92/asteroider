@@ -85,7 +85,7 @@ async function updateLeaderboard(player, score) {
     if (currentData) {
       // If player exists in the leaderboard, update their score and ship
       currentData.score = score;
-      currentData.ship = player.ship;
+      currentData.ship = player.ship.name;
     } else {
       // If player doesn't exist, add a new entry to the local leaderboard
       leaderboard.push({ name: player.name, score: score, ship: player.ship });

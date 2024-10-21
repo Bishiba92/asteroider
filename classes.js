@@ -439,3 +439,53 @@ class ImageObject {
         this.rotateFrameCount = 0; // Reset frame counter
     }
 }
+const shipImages = [new Image(), new Image(), new Image()];
+shipImages[0].src = 'img/ship0.png';
+shipImages[1].src = 'img/ship1.png';
+shipImages[2].src = 'img/ship2.png';
+
+class Ship {
+    constructor(name, imgName, speed, steering, health, size, shipImageIndex) {
+        this.name = name;
+        this.img = shipImages[shipImageIndex];
+		  this.imgName = imgName;
+        this.speed = speed;
+        this.steering = steering;
+        this.health = health;
+        this.width = 0;
+        this.height = 0;
+
+        // Load the base image to get the dimensions
+        this.img.onload = () => {
+            this.width = this.img.width;
+            this.height = this.img.height;
+        };
+    }
+
+    // Method to draw the ship on the canvas
+    draw(ctx, x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.drawImage(this.img, -this.width / 2, -this.height / 2); // Draw centered
+        ctx.restore();
+    }
+
+    // Method to update the ship's state (expandable for movement, etc.)
+    update() {
+        // Ship logic can be added here
+    }
+}
+// Creating the Falcon ship
+const falcon = new Ship('Falcon', 'ship0', 1.4, 1.1, 3, 1.1, 0);
+
+// Creating the Raven ship
+const raven = new Ship('Raven', 'ship1', 1.0, 0.9, 4, 1.3, 1);
+
+// Creating the Hawk ship
+const hawk = new Ship('Hawk', 'ship2', 1.3, 1.4, 3, 1, 2);
+
+let ships = [
+	falcon,
+	raven,
+	hawk
+]

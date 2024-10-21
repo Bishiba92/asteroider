@@ -15,10 +15,6 @@ audioPlayer.preloadSFX(['star', 'explosion1', 'gameover', 'shieldGain']);
 // audioPlayer.preloadBGS(['bgs1']);
 // audioPlayer.playSFX('sfx1');
 // audioPlayer.playBGS('bgs1');
-const shipImages = [new Image(), new Image(), new Image()];
-shipImages[0].src = 'img/ship0.png';
-shipImages[1].src = 'img/ship1.png';
-shipImages[2].src = 'img/ship2.png';
 
 let currentShipIndex = 0;
 
@@ -26,8 +22,7 @@ let currentShipIndex = 0;
 function nextShip() {
 	if (isSelectOnCooldown()) return;
 	optionCooldown();
-   currentShipIndex = (currentShipIndex + 1) % shipImages.length;
-	player.selectedShipImage = shipImages[currentShipIndex];
+   currentShipIndex = (currentShipIndex + 1) % ships.length;
 	setPlayerShip();
 	
 }
@@ -36,10 +31,8 @@ function nextShip() {
 function previousShip() {
 	if (isSelectOnCooldown()) return;
 	optionCooldown();
-    currentShipIndex = (currentShipIndex - 1 + shipImages.length) % shipImages.length;
-	player.selectedShipImage = shipImages[currentShipIndex];
+   currentShipIndex = (currentShipIndex - 1 + ships.length) % ships.length;
 	setPlayerShip();
-
 }
 
 const playerShieldImage = new Image();
@@ -164,32 +157,10 @@ let player = {
     isImmortal: false,
     immortalTime: 0,
     hasShield: false,
-    selectedShipImage: shipImages[0],
-	shipImgName: "ship0",
-	ship: "Falcon"
+	 ship: null
 };
 
-player.selectedShipImage = shipImages[Math.floor(Math.random() * shipImages.length)];
-
-function getShipImgName(fullPath) {
-    // Extracts the filename from the full path, without the extension
-    const fileName = fullPath.split('/').pop(); // Get the last part of the path
-    const shipImgName = fileName.replace('.png', ''); // Remove the file extension
-    return shipImgName;
-}
-
-function setPlayerShip() {
-    const selectedShipImgName = getShipImgName(player.selectedShipImage.src);
-	player.shipImgName = selectedShipImgName;
-	playerShipImage.changeImage(selectedShipImgName);
-    if (selectedShipImgName === "ship0") {
-        player.ship = "Falcon";
-    } else if (selectedShipImgName === "ship1") {
-        player.ship = "Raven";
-    } else if (selectedShipImgName === "ship2") {
-        player.ship = "Hawk";
-    }
-}
+player.ship = ships[Math.floor(Math.random() * ships.length)];
 
 let obstacles = [];
 let stars = [];
@@ -198,9 +169,6 @@ let shields = [];
 let goldStars = [];
 let score = 0;
 let isGameOver = false;
-
-
-
 
 function createParticleExplosion(x, y, particleCount = 150, radiusMod = 2, lifetimeMod = 1.5, explosiveForce = 5000, colors = ['#FF4500', '#FFD700', '#FF6347', '#FFFFFF']) {
     for (let i = 0; i < particleCount; i++) {
@@ -275,11 +243,11 @@ function drawPlayer() {
     }
 
     // Assuming the player's image is preloaded and stored in `player.selectedShipImage`
-    const img = player.selectedShipImage;
+    const img = player.ship.img;
 
     // Scale the width and height of the image based on the player's scale factor
-    const imgWidth = img.width * player.scale;
-    const imgHeight = img.height * player.scale;
+    const imgWidth = player.ship.img.width * player.scale;
+    const imgHeight = player.ship.img.height * player.scale;
 
     // Draw the player's image at the center, taking into account the scaled size
     ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
@@ -602,14 +570,11 @@ let titleOpacity = 0; // Opacity for fading effect
 let titleY = -100; // Starting Y position for the title (off-screen)
 let titleSpeed = 1.5; // Speed for panning down the title
 
-let playerShipImage = new ImageObject(player.shipImgName, {x:canvas.width/2,y:canvas.height/2+255});
+let playerShipImage = new ImageObject(player.ship.imgName, {x:canvas.width/2,y:canvas.height/2+255});
 playerShipImage.onClick = nextShip;
 playerShipImage.scale = 0.5;
 // Function to draw the main menu
-function drawMainMenu() {
-	
-	playerShipImage.draw();
-	
+function drawMainMenu() {	
     // Animate the title panning down and fading in
     if (titleY < canvas.height / 4) {
         titleY += titleSpeed; // Move the title down
@@ -626,7 +591,8 @@ function drawMainMenu() {
         y: titleY
     }, 4, "white");
     ctx.restore();
-
+	playerShipImage.moveToPoint({x:canvas.width/2,y:canvas.height/2+255});
+	playerShipImage.draw();
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < mainMenuOptions.length; i++) {
         selectedMenuOption = writeMenuText(mainMenuOptions[i], "center", {
@@ -777,7 +743,7 @@ function drawLeaderboard() {
     console.log("No leaderboard data available to draw.");
     return;
   }
-
+	drawRectangle(canvas.width / 2, canvas.height / 2, canvas.width - 50, canvas.height - 50, "black", 0.6);
   ctx.save();
   let titleY = 50;
 
@@ -940,15 +906,11 @@ logo.scale = 0.01;
 isMobile ? logo.scaleToSize(0.25, 1000) : logo.scaleToSize(0.25, 1000);
 let startMusicInt = 0;
 function gameLoop(currentTime) {
-	logo.moveToPoint({x:canvas.width/2,y:canvas.height/2-55});
+	
 	checkMouseMovedRecently();
     requestAnimationFrame(gameLoop); // Continue the loop
 	isMobile = 'ontouchstart' in window;
 	fontScale = 0.6;
-    if (false && !audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
-        console.log("Trying to play music");
-        audioPlayer.nextMusic();
-    }
     // Calculate the time difference between the current frame and the last frame
     let elapsedTime = currentTime - lastFrameTime;
 
@@ -965,6 +927,7 @@ function gameLoop(currentTime) {
 			
 			if (whatToDraw != "Game") {
 				drawBackground();
+				logo.moveToPoint({x:canvas.width/2,y:canvas.height/2-55});
 				logo.draw();
 			}
         switch (whatToDraw) {
@@ -1197,22 +1160,6 @@ function updatePlayerPosition() {
     }
 }
 
-function drawRectangle(x, y, width, height, color, transparency = 1) {
-    // Save the current canvas state
-    ctx.save();
-
-    // Set the transparency level (global alpha)
-    ctx.globalAlpha = transparency;
-
-    // Set the fill color
-    ctx.fillStyle = color;
-
-    // Draw the rectangle
-    ctx.fillRect(x, y, width, height);
-
-    // Restore the canvas state to avoid affecting other drawings
-    ctx.restore();
-}
 function drawRectangle(x, y, width, height, color, transparency = 1) {
     // Save the current canvas state
     ctx.save();
@@ -1492,4 +1439,24 @@ canvas.addEventListener('touchcancel', function () {
     isClicking = false;
 });
 
+function startMusicOnInteraction() {
+    // Define the event listener function
+    function playMusicOnce() {
+        // Check the condition before starting the music
+        if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
+            console.log("Trying to play music");
+            audioPlayer.nextMusic();
+
+            // Remove the event listener after playing the music once
+            canvas.removeEventListener('click', playMusicOnce);
+            canvas.removeEventListener('touchstart', playMusicOnce);
+        }
+    }
+
+    // Attach the event listener for both 'click' and 'touchstart' (for mobile support)
+    canvas.addEventListener('click', playMusicOnce);
+    canvas.addEventListener('touchstart', playMusicOnce);
+}
+
+startMusicOnInteraction();
 setPlayerName();
