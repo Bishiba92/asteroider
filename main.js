@@ -1,5 +1,5 @@
 
-const gameVersion = "1.14";
+const gameVersion = "1.15";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -981,6 +981,7 @@ function drawGame() {
             x: 35,
             y: 80
         }, 2, "yellow");
+		if (true) drawGameTestTexts();
         backButton.moveToPoint({
             x: canvas.width - 50,
             y: 50
@@ -998,28 +999,32 @@ function drawGame() {
 
 function drawGameTestTexts() {
     let i = 1;
-    let rowHeight = 24;
+    let rowHeight = -24;
     let yOffset = 10;
-    writeText(`Version: ${gameVersion}`, "top-right", {
+    writeText(`Version: ${gameVersion}`, "bottom-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 0.4);
-    writeText(`particles: ${particles.length}`, "top-right", {
+    }, 1);
+    writeText(`particles: ${particles.length}`, "bottom-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 0.4);
-    writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
+    }, 1);
+    writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "bottom-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 0.4);
-    writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "top-right", {
+    }, 1);
+	writeText(`Time Mod: ${timeMod.toFixed("3")}`, "bottom-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 0.4);
-    writeText(`Mobile: ${isMobile}`, "top-right", {
+    }, 1);
+    writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "bottom-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 0.4);
+    }, 1);
+    writeText(`Mobile: ${isMobile}`, "bottom-right", {
+        x: -8,
+        y: yOffset + rowHeight * i++
+    }, 1);
 }
 let logo = new ImageObject("logo", {
     x: canvas.width / 2,
@@ -1140,7 +1145,7 @@ function updateGame() {
             createGoldStar();
         if (time % (Math.floor(1000 / timeScale)) == 0)
             createShield();
-        objectSpawnTimer = Math.max(35 - Math.floor(time / 400), 10);
+        objectSpawnTimer = Math.max(35 - Math.floor(time / 450), 8);
         if (time % (Math.floor(objectSpawnTimer * objectSpawnRateByWidthOfScreen / timeScale)) == 0)
             createObstacle();
         immortalTimer();
@@ -1240,7 +1245,6 @@ function startGame() {
     player.y = canvas.height / 2;
     createStars();
 }
-
 function setMainState() {
     canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
@@ -1519,6 +1523,7 @@ function handleKeyDown(event) {
         break;
     }
 }
+
 Object.keys(console).forEach(method => {
         console[method] = () => {};
     });
