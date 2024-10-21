@@ -1,4 +1,4 @@
-const gameVersion = "1.11";
+const gameVersion = "1.12";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -92,10 +92,8 @@ function xorshift(state) {
 function getRandom() {
     return simpleRNG(time, randomSeed, 0, 1);
 }
-let xsa = 0;
+
 function resizeCanvasToWindow() {
-	if (xsa == 1)return;
-	xsa = 1;
     const canvas = document.getElementById('gameCanvas');
     
     // Use visualViewport for more accurate sizing on mobile
@@ -652,21 +650,22 @@ function drawMainMenu() {
 	let r = 1;
 	let rh = 20;
 	let shipOffset = {x: 30, y: -50};
-	let colOffset = 60;
+	let colOffset = 80;
+	let fontScaler = 1.2;
 	
-	writeText(player.ship.name, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y}, 1, "yellow", "left");
+	writeText(player.ship.name, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y}, fontScaler, "yellow", "left");
 	
-	writeText(`Speed:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
-	writeText(`${player.ship.speed}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	writeText(`Speed:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
+	writeText(`${player.ship.speed}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
 	
-	writeText(`Steer:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
-	writeText(`${player.ship.steering}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	writeText(`Steer:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
+	writeText(`${player.ship.steering}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
 	
-	writeText(`Health:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
-	writeText(`${player.ship.health}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	writeText(`Health:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
+	writeText(`${player.ship.health}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
 	
-	writeText(`Size:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, 1, "white", "left");
-	writeText(`${player.ship.size}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, 1, "white", "left");
+	writeText(`Size:`, "top-left", {x: base.x + shipOffset.x, y: base.y + shipOffset.y + rh * r}, fontScaler, "white", "left");
+	writeText(`${player.ship.size}`, "top-left", {x: base.x + shipOffset.x + colOffset, y: base.y + shipOffset.y + rh * r++}, fontScaler, "white", "left");
 	
 	
 }
