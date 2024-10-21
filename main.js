@@ -1,4 +1,4 @@
-const gameVersion = "1.16";
+const gameVersion = "1.17";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -406,6 +406,25 @@ function immortalTimer() {
         player.isImmortal = false;
         player.hasShield = false;
     }
+}
+function getFormattedDate() {
+    const now = new Date();
+    
+    // Get components of the date and time
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-11
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Get the timezone offset in hours
+    const timezoneOffset = -now.getTimezoneOffset() / 60; // Convert minutes to hours
+    const timezoneSign = timezoneOffset >= 0 ? '+' : '-';
+    const timezoneHours = String(Math.abs(timezoneOffset)).padStart(2, '0');
+    
+    // Combine into the desired format
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} GMT${timezoneSign}${timezoneHours}`;
 }
 function writeText(text, anchor, offset = {
         x: 0,
