@@ -898,7 +898,7 @@ function drawLeaderboard() {
 
 function handleLeaderboardSelection(fromClick = false) {
 	if (isSelectOnCooldown()) return;
-	if (esc || fromClick) {
+	if (esc || isClicking) {
 		optionCooldown();
 		showMainMenu();
 	}	
