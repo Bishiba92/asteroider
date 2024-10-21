@@ -1,3 +1,4 @@
+
 const gameVersion = "1.14";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -43,19 +44,19 @@ playerShieldImage.src = 'img/shield.png';
 const playerShieldGlowImage = new Image();
 playerShieldGlowImage.src = 'img/shieldGlow.png';
 
-let fpsCap = 60; // Target FPS
-let fpsInterval = 1000 / fpsCap; // Calculate the time interval between frames for the target FPS
-let lastFrameTime = performance.now(); // Track the time of the last frame
-let fps = 0; // Current FPS
-let fpsCounter = 0; // Number of frames rendered in the last second
-let fpsLastTime = performance.now(); // Track the last time we calculated the FPS
+let fpsCap = 60;
+let fpsInterval = 1000 / fpsCap;
+let lastFrameTime = performance.now();
+let fps = 0; 
+let fpsCounter = 0;
+let fpsLastTime = performance.now();
 
-let progressionSpeed = 0.0006; // How much faster the game gets as the game progresses
+let progressionSpeed = 0.0006;
 let timeMod = 1;
 
-let objectDensity = 800; // Change this to change density of spawning objects (Currently only affects asteroids)
-let objectSpawnTimer = 0; // Changing this value has no bearing on the game, it is set by other factors
-let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing on the game, it is set by other factors
+let objectDensity = 800;
+let objectSpawnTimer = 0;
+let objectSpawnRateByWidthOfScreen = 10;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -66,80 +67,40 @@ let fontScale = 1;
 let time = 1;
 let timeScale = 1;
 
-let randomSeed = 4612;
-function simpleRNG(iteration, seed, min, max) {
-    // Some arbitrary prime numbers for better distribution
-    const state = iteration * 74755 + seed * 65933;
-
-    // Get the random int using Xorshift
-    const randomInt = xorshift(state);
-
-    // Normalize to [0, 1)
-    const value = randomInt / 0xFFFFFFFF;
-
-    // Scale the result to [min, max)
-    return value * (max - min) + min;
-}
-
-// Implementing Xorshift (32-bit variant)
-function xorshift(state) {
-    let x = Math.floor(state); // Convert to integer for bitwise operations
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    return x >>> 0; // Convert back to unsigned 32-bit integer
-}
-
-function getRandom() {
-    return simpleRNG(time, randomSeed, 0, 1);
-}
-
 function resizeCanvasToWindow() {
     const canvas = document.getElementById('gameCanvas');
 
-    // Use visualViewport for more accurate sizing on mobile
     const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
     const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
-    // Desired aspect ratio (9:16, approximately 0.5625)
     const aspectRatio = 9 / 16;
 
-    // Define the max height (800px) for non-mobile
-    const maxHeight = 1800; // Max height for non-mobile
-
+    const maxHeight = 1800;
     let canvasHeight,
     canvasWidth;
 
     if (!isMobile) {
-        // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
         canvasHeight = Math.min(viewportHeight, maxHeight);
 
-        // Calculate the corresponding width to maintain the 9:16 aspect ratio
         canvasWidth = canvasHeight * aspectRatio;
 
-        // Adjust canvas dimensions
         canvas.height = canvasHeight;
         canvas.width = canvasWidth;
     } else {
-        // For mobile, use full viewport dimensions (no constraints)
         canvas.width = viewportWidth;
         canvas.height = viewportHeight;
-        // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
+
         canvasHeight = Math.min(viewportHeight, maxHeight);
 
-        // Calculate the corresponding width to maintain the 9:16 aspect ratio
         canvasWidth = canvasHeight * aspectRatio;
     }
 
-    // Adjust game logic based on the new canvas size
     objectSpawnRateByWidthOfScreen = objectDensity / canvas.width;
 
-    // Ensure the canvas element scales up to fill the height of the viewport while maintaining aspect ratio
-    // This can be achieved using CSS transformations for scaling
     const scaleFactor = viewportHeight / canvasHeight;
     canvas.style.transform = `scale(${scaleFactor})`;
     canvas.style.transformOrigin = 'top left'; // Scale from the top-left corner
-    canvas.style.position = 'absolute'; // Ensure it stays positioned properly
+    canvas.style.position = 'absolute';
     canvas.style.top = '0';
     canvas.style.left = '50%';
     canvas.style.transform += ' translateX(-50%)'; // Center the canvas horizontally
@@ -292,7 +253,7 @@ function checkCollision() {
     obstacles.forEach((obstacle, index) => {
         if (obstacle.checkCollision(player)) {
             console.log("collision")
-            handleCollision(obstacle, index); // Handle the obstacle collision
+            handleCollision(obstacle, index);
         }
     });
 
@@ -397,7 +358,7 @@ function createExplosion(x, y) {
     ctx.fill();
     setTimeout(() => {
         ctx.clearRect(x - 55, y - 55, 110, 110);
-    }, 200); // Explosion effect lasts for 200ms
+    }, 200);
 }
 
 function drawBackground() {
@@ -1558,7 +1519,9 @@ function handleKeyDown(event) {
         break;
     }
 }
-
+Object.keys(console).forEach(method => {
+        console[method] = () => {};
+    });
 // Handle key up event
 function handleKeyUp(event) {
     switch (event.key) {
