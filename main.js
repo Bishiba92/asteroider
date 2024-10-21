@@ -212,10 +212,10 @@ function drawPlayer() {
 
     // Get the player's ship image
     const img = player.ship.img;
-	const scale = 1;
+	
     // Adjust the image dimensions based on the player's scale factor
-    const imgWidth = player.ship.img.width * scale;
-    const imgHeight = player.ship.img.height * scale;
+    const imgWidth = player.ship.img.width * player.scale;
+    const imgHeight = player.ship.img.height * player.scale;
 
     // Draw the ship image with scaling applied
     ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
