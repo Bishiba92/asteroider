@@ -1,4 +1,4 @@
-const gameVersion = "1.17";
+const gameVersion = "1.18";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
