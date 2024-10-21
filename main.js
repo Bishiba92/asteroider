@@ -1,4 +1,4 @@
-const gameVersion = "1.12";
+const gameVersion = "1.14";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -204,7 +204,7 @@ function createParticles() {
         let color = ['#00FFFF', '#00FFFF', '#0000FF', '#800080'][Math.floor(Math.random() * 3)];
         let size = Math.random() * 1 + 0.5;
         let xOffset = Math.random() * 10 - 5;
-        let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2; // General downward direction with slight randomness
+        let direction = Math.PI / 2 + (Math.random() - 0.5) * 0.2;
         let speedMod = timeMod * (1 + Math.random() * 2);
         particles.push(new Particle(player.x + xOffset, player.y + 15, color, size, 0.5, direction, speedMod));
     }
@@ -238,32 +238,28 @@ function createGoldStar() {
 }
 function drawPlayer() {
     ctx.save();
-    ctx.translate(player.x, player.y); // Move the context to the player's position
-    ctx.rotate(player.angle); // Rotate the context to match the player's angle
+    ctx.translate(player.x, player.y); 
+    ctx.rotate(player.angle); 
 
-    // Apply transparency effect if the player is immortal and doesn't have a shield
     if (player.isImmortal && !player.hasShield) {
-        ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5; // Flashing effect
+        ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5;
     }
 
-    // Assuming the player's image is preloaded and stored in `player.selectedShipImage`
     const img = player.ship.img;
 
-    // Scale the width and height of the image based on the player's scale factor
     const imgWidth = player.ship.img.width * player.scale;
     const imgHeight = player.ship.img.height * player.scale;
 
-    // Draw the player's image at the center, taking into account the scaled size
     ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
 
-    ctx.restore(); // Restore the context's state to avoid affecting other drawings
-    ctx.globalAlpha = 1.0; // Reset transparency
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
 }
 function drawShieldCircle() {
     if (player.hasShield) {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(player.x, player.y, 40, 0, Math.PI * 2); // Circle with radius 40
+        ctx.arc(player.x, player.y, player.ship.size * player.radius, 0, Math.PI * 2);
         ctx.strokeStyle = 'cyan';
         ctx.lineWidth = 5;
         ctx.globalAlpha = 0.5;
@@ -328,6 +324,7 @@ async function setCurrentRecord() {
     currentRecord = await getRecord(player.name);
 }
 
+let asteroidsHit = 0;
 function handleCollision(obstacle, index) {
     if (player.shields > 0) {
         if (!player.isImmortal)
@@ -345,6 +342,7 @@ function handleCollision(obstacle, index) {
         }
         player.hasShield = false;
         player.immortalTime = 10;
+		  asteroidsHit++;
     }
 }
 
@@ -365,6 +363,7 @@ function setGameover(inputStr = null) {
     }
 }
 
+let totalShields = 0;
 function handleShieldPickup(index) {
     audioPlayer.playSFX('shieldGain');
     if (player.shields < player.ship.health) {
@@ -374,12 +373,15 @@ function handleShieldPickup(index) {
     shields.splice(index, 1);
     grantImmortality(60 * 6);
     player.hasShield = true;
+	totalShields++;
 }
 
+let totalGoldStars = 0;
 function handleGoldStarPickup(index) {
     audioPlayer.playSFX('star');
     score += 10;
     goldStars.splice(index, 1);
+	totalGoldStars++;
 }
 
 function grantImmortality(t = 2) {
@@ -1177,7 +1179,7 @@ function updateGame() {
             createGoldStar();
         if (time % (Math.floor(1000 / timeScale)) == 0)
             createShield();
-        objectSpawnTimer = Math.max(30 - Math.floor(time / 300), 10);
+        objectSpawnTimer = Math.max(35 - Math.floor(time / 400), 10);
         if (time % (Math.floor(objectSpawnTimer * objectSpawnRateByWidthOfScreen / timeScale)) == 0)
             createObstacle();
         immortalTimer();
@@ -1261,6 +1263,9 @@ function startGame() {
     canvas.addEventListener('touchstart', startJoystick);
     timeScale = 1;
     isGameOver = false;
+	asteroidsHit = 0;
+	totalShields = 0;
+	totalGoldStars = 0;
     score = 0;
     time = 0;
     player.shields = player.ship.health;

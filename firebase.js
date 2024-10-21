@@ -78,7 +78,7 @@ async function updateLeaderboard(player, score) {
     console.log("New high score! Updating leaderboard...");
 
     // Update Firestore with the new score and ship
-    const newValue = { score: score, ship: player.ship.name };
+    const newValue = { score: score, ship: player.ship.name, asteroids: asteroidsHit, stars: totalGoldStars, shields: totalShields };
     await setField(collectionName, docId, fieldName, newValue);
 
     // Immediately update the local leaderboard with the new score
