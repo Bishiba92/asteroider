@@ -1,6 +1,12 @@
-const gameVersion = "1.06";
+const gameVersion = "1.07";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+let textDefaults = {
+	font: "Audiowide",
+	fontSize: 22,
+	fontColor: "white",
+}
+const textButtonColors = ['white', '#FFFF00', '#FFD700'];
 
 
 const audioPlayer = new AudioPlayer();
@@ -13,6 +19,28 @@ const shipImages = [new Image(), new Image(), new Image()];
 shipImages[0].src = 'img/ship0.png';
 shipImages[1].src = 'img/ship1.png';
 shipImages[2].src = 'img/ship2.png';
+
+let currentShipIndex = 0;
+
+// Function to show the next ship image
+function nextShip() {
+	if (isSelectOnCooldown()) return;
+	optionCooldown();
+   currentShipIndex = (currentShipIndex + 1) % shipImages.length;
+	player.selectedShipImage = shipImages[currentShipIndex];
+	setPlayerShip();
+	
+}
+
+// Function to show the previous ship image
+function previousShip() {
+	if (isSelectOnCooldown()) return;
+	optionCooldown();
+    currentShipIndex = (currentShipIndex - 1 + shipImages.length) % shipImages.length;
+	player.selectedShipImage = shipImages[currentShipIndex];
+	setPlayerShip();
+
+}
 
 const playerShieldImage = new Image();
 playerShieldImage.src = 'img/shield.png';
@@ -36,19 +64,11 @@ let objectSpawnRateByWidthOfScreen = 10; // Changing this value has no bearing o
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-ctx.font = `${this.size} "Press Start 2P"`;
-canvas.addEventListener('mousemove', function (event) {
-        // Get the bounding rectangle of the canvas
-        const rect = canvas.getBoundingClientRect();
-
-        // Update the mouse position relative to the canvas
-        mousePosition.x = event.clientX - rect.left;
-        mousePosition.y = event.clientY - rect.top;
-    });
+ctx.font = `${textDefaults.fontSize}px ${textDefaults.font}`;
 	
 let fontScale = 1;
 
-let time = 0;
+let time = 1;
 let timeScale = 1;
 
 let randomSeed = 4612;
@@ -78,13 +98,53 @@ function xorshift(state) {
 function getRandom() {
     return simpleRNG(time, randomSeed, 0, 1);
 }
-
 function resizeCanvasToWindow() {
     const canvas = document.getElementById('gameCanvas');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    objectSpawnRateByWidthOfScreen = objectDensity / canvas.width
+    
+    // Use visualViewport for more accurate sizing on mobile
+    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    
+    // Desired aspect ratio (9:16, approximately 0.5625)
+    const aspectRatio = 9 / 16;
+    
+    // Define the max height (800px) for non-mobile
+    const maxHeight = 1200; // Max height for non-mobile
+    
+    let canvasHeight, canvasWidth;
+    
+    if (true) {
+        // Force the height to always be the viewport height or the maxHeight (whichever is smaller)
+        canvasHeight = Math.min(viewportHeight, maxHeight);
+        
+        // Calculate the corresponding width to maintain the 9:16 aspect ratio
+        canvasWidth = canvasHeight * aspectRatio;
+        
+        // Adjust canvas dimensions
+        canvas.height = canvasHeight;
+        canvas.width = canvasWidth;
+    } else {
+        // For mobile, use full viewport dimensions (no constraints)
+        canvas.width = viewportWidth;
+        canvas.height = viewportHeight;
+    }
+
+    // Adjust game logic based on the new canvas size
+    objectSpawnRateByWidthOfScreen = objectDensity / canvas.width;
+
+    // Ensure the canvas element scales up to fill the height of the viewport while maintaining aspect ratio
+    // This can be achieved using CSS transformations for scaling
+    const scaleFactor = viewportHeight / canvasHeight;
+    canvas.style.transform = `scale(${scaleFactor})`;
+    canvas.style.transformOrigin = 'top left'; // Scale from the top-left corner
+    canvas.style.position = 'absolute'; // Ensure it stays positioned properly
+    canvas.style.top = '0';
+    canvas.style.left = '50%';
+    canvas.style.transform += ' translateX(-50%)'; // Center the canvas horizontally
 }
+
+
+
 resizeCanvasToWindow();
 addJoystickToCanvas(canvas);
 
@@ -102,17 +162,30 @@ let player = {
     immortalTime: 0,
     hasShield: false,
     selectedShipImage: shipImages[0],
+	shipImgName: "ship0",
 	ship: "Falcon"
 };
 
 player.selectedShipImage = shipImages[Math.floor(Math.random() * shipImages.length)];
 
-if (player.selectedShipImage.src.includes("ship0")) {
-    player.ship = "Falcon";
-} else if (player.selectedShipImage.src.includes("ship1")) {
-    player.ship = "Raven";
-} else if (player.selectedShipImage.src.includes("ship2")) {
-    player.ship = "Hawk";
+function getShipImgName(fullPath) {
+    // Extracts the filename from the full path, without the extension
+    const fileName = fullPath.split('/').pop(); // Get the last part of the path
+    const shipImgName = fileName.replace('.png', ''); // Remove the file extension
+    return shipImgName;
+}
+
+function setPlayerShip() {
+    const selectedShipImgName = getShipImgName(player.selectedShipImage.src);
+	player.shipImgName = selectedShipImgName;
+	playerShipImage.changeImage(selectedShipImgName);
+    if (selectedShipImgName === "ship0") {
+        player.ship = "Falcon";
+    } else if (selectedShipImgName === "ship1") {
+        player.ship = "Raven";
+    } else if (selectedShipImgName === "ship2") {
+        player.ship = "Hawk";
+    }
 }
 
 let obstacles = [];
@@ -292,21 +365,29 @@ function handleCollision(obstacle, index) {
             grantImmortality();
         audioPlayer.playSFX('explosion1');
         if (player.shields === 0) {
-            isGameOver = true;
-            endJoystick();
-            createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
-            audioPlayer.playSFX('gameover');
-            timeScale = 0.03;
-				updateLeaderboard(player, score)
-
-            canvas.removeEventListener('mousedown', startJoystick);
-            canvas.removeEventListener('touchstart', startJoystick);
-            canvas.addEventListener('mousedown', startGame);
-            canvas.addEventListener('touchstart', startGame);
+          createParticleExplosion(player.x, player.y, 100, 1, 0.5, 2, ['#FFD700', '#FFD700', '#FFD700', '#FF4500']);
+			audioPlayer.playSFX('gameover');
+			setGameover();
         }
         player.hasShield = false;
         player.immortalTime = 10;
     }
+}
+
+function setGameover(inputStr = null) {
+	isGameOver = true;
+	if (inputStr != null) player.name = inputStr;
+	endJoystick();
+	timeScale = 0.03;
+	canvas.removeEventListener('mousedown', startJoystick);
+	canvas.removeEventListener('touchstart', startJoystick);   
+	if (player.name == undefined) {
+		openInputModal("Pilot Name", setGameover);
+	} else {
+		canvas.addEventListener('mousedown', startGame);
+		canvas.addEventListener('touchstart', startGame);
+		updateLeaderboard(player, score);					
+	}	
 }
 
 function handleShieldPickup(index) {
@@ -377,13 +458,12 @@ function immortalTimer() {
         player.hasShield = false;
     }
 }
-
-function writeText(text, anchor, offset = { x: 0, y: 0 }, fontSize = 30, color = 'white', align) {
-    fontSize *= fontScale;
+function writeText(text, anchor, offset = { x: 0, y: 0 }, fontMod, color = 'white', align) {
+    fontSize = textDefaults.fontSize * fontMod * fontScale;
     const canvasWidth = ctx.canvas.width;  // Get canvas width
     const canvasHeight = ctx.canvas.height;  // Get canvas height
     ctx.fillStyle = color;  // Set the color for the text
-    ctx.font = `${fontSize}px "Press Start 2P"`;  // Set the font size and font family
+    ctx.font = `${fontSize}px ${textDefaults.font}`;  // Set the font size and font family
 
     const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
 
@@ -418,8 +498,74 @@ function writeText(text, anchor, offset = { x: 0, y: 0 }, fontSize = 30, color =
     // Draw the text on the canvas
     ctx.fillText(text, x, y);
 }
+function writeMenuText(text, anchor, offset = { x: 0, y: 0 }, fontMod = 1, colors = ['white', 'lightgray', 'gray'], selected = false, align) {
+    // Extract colors from the array with defaults
+    const [normalColor, hoverColor, clickColor] = colors;
 
+    const fontSize = textDefaults.fontSize * fontMod * fontScale;
+    const canvasWidth = ctx.canvas.width;
+    const canvasHeight = ctx.canvas.height;
 
+    const textHeight = fontSize;  // Simplified approximation of text height (based on font size)
+
+    let x = 0;
+    let y = 0;
+
+    // Handle horizontal anchor points and set default alignment
+    if (anchor.includes('left')) {
+        x = 0;
+    } else if (anchor.includes('center')) {
+        x = canvasWidth / 2;
+    } else if (anchor.includes('right')) {
+        x = canvasWidth;
+    }
+
+    // Handle vertical anchor points
+    if (anchor.includes('top')) {
+        y = textHeight;  // Start at text height since y refers to the baseline
+    } else if (anchor.includes('center')) {
+        y = canvasHeight / 2 + textHeight / 2;
+    } else if (anchor.includes('bottom')) {
+        y = canvasHeight - textHeight / 4;  // Adjust to leave some space for descenders
+    }
+
+    // Apply offsets to x and y
+    x += offset.x;
+    y += offset.y;
+
+    // Get the text metrics to calculate the text bounding box for mouse interactions
+    const textWidth = ctx.measureText(text).width;
+
+    // Calculate text bounding box
+    const minX = x - (ctx.textAlign === "center" ? textWidth / 2 : ctx.textAlign === "right" ? textWidth : 0);
+    const maxX = minX + textWidth;
+    const minY = y - textHeight;
+    const maxY = y;
+
+    // Check if the mouse is hovering over (selected) the text
+    let isSelected = mousePosition.x >= minX && mousePosition.x <= maxX && mousePosition.y >= minY && mousePosition.y <= maxY;
+
+    // Determine the current color based on selection, hover, and click states
+    let currentColor = normalColor;
+
+    if (selected || isSelected) {
+        // Highlight the item as selected (keyboard or mouse hover)
+        currentColor = clickColor;  // You can use the clickColor for selection or define a special selectedColor if desired
+    } else if (isSelected && isClicking) {
+        currentColor = clickColor;
+    } else if (isSelected) {
+        currentColor = hoverColor;
+    }
+
+    // Call writeText to render the text using the determined color
+    writeText(text, anchor, offset, fontMod, currentColor, align);
+
+    // Return an object with isSelected and isClicked status
+    return {
+        isSelected: isSelected || selected, // True if the item is selected (by keyboard or hover)
+        isClicked: isSelected && isClicking  // True if the item is clicked
+    };
+}
 
 function drawRemainingShields() {
     const iconSize = 40; // Size of the shield icons
@@ -453,8 +599,14 @@ let titleOpacity = 0; // Opacity for fading effect
 let titleY = -100; // Starting Y position for the title (off-screen)
 let titleSpeed = 1.5; // Speed for panning down the title
 
+let playerShipImage = new ImageObject(player.shipImgName, {x:canvas.width/2,y:canvas.height/2+255});
+playerShipImage.onClick = nextShip;
+playerShipImage.scale = 0.5;
 // Function to draw the main menu
 function drawMainMenu() {
+	
+	playerShipImage.draw();
+	
     // Animate the title panning down and fading in
     if (titleY < canvas.height / 4) {
         titleY += titleSpeed; // Move the title down
@@ -469,17 +621,19 @@ function drawMainMenu() {
     writeText("Asteroider", "top-center", {
         x: 0,
         y: titleY
-    }, 60, "white");
+    }, 4, "white");
     ctx.restore();
 
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < mainMenuOptions.length; i++) {
-        writeText(mainMenuOptions[i], "center", {
+        selectedMenuOption = writeMenuText(mainMenuOptions[i], "center", {
             x: 0,
             y: i * 60
-        }, 40, selectedMenuOption === i ? "yellow" : "white");
+        }, 1.6, textButtonColors, selectedMenuOption === i).isSelected ? i : selectedMenuOption;
     }
+	
 }
+
 // Mouse click handling for menu selection
 canvas.addEventListener('click', function (event) {
     if (isMainMenu) {
@@ -574,15 +728,15 @@ function drawOptionsMenu() {
     writeText("Asteroider", "top-center", {
         x: 0,
         y: titleY
-    }, 60, "white");
+    }, 4, "white");
     ctx.restore();
 
     // Draw the menu options with dynamic positioning
     for (let i = 0; i < gameOptions.length; i++) {
-        writeText(gameOptions[i], "center", {
+        selectedGameOption = writeMenuText(gameOptions[i], "center", {
             x: 0,
             y: i * 60
-        }, 40, selectedGameOption === i ? "yellow" : "white");
+        }, 1.6, textButtonColors, selectedGameOption === i).isSelected ? i : selectedGameOption;
     }
 }
 
@@ -630,7 +784,7 @@ function drawLeaderboard() {
   writeText(titleText, "top-center", {
     x: 0,
     y: titleY
-  }, 60, titleColor);
+  }, 2, titleColor);
 
   ctx.restore();
 
@@ -646,7 +800,7 @@ function drawLeaderboard() {
   let col3Start = canvasWidth * 0.8;  // Score column (80% of the canvas width)
 
   let rowHeight = isMobile ? 20 : 25;  // Adjust row height for better readability
-  let fontSize = 20;
+  let fontSize = 1;
   let color = "white";
 
   // Track if the player is part of the top 25
@@ -697,7 +851,7 @@ function drawLeaderboard() {
 	  writeText(restartMessage, "top-center", {
             x: 0,
             y: startY + 27 * rowHeight
-        }, 18, "green", "center");
+        }, 0.9, "green", "center");
   }
 }
 
@@ -725,8 +879,12 @@ let restartMessage = "Press R or tap to Restart";
 
 function drawGame() {
     drawBackground();
-    if (isGameOver)
+    if (isGameOver) {
+		if (player.name == undefined) {
+			drawModal();
+		}
         drawPlayer();
+	}
     updateParticles();
     drawObstacles();
     drawShields();
@@ -739,7 +897,7 @@ function drawGame() {
         writeText(score, "top-left", {
             x: 35,
             y: 80
-        }, 30, "yellow");
+        }, 2, "yellow");
 
     if (isGameOver) {
 		drawLeaderboard();
@@ -756,30 +914,34 @@ function drawGameTestTexts() {
 	writeText(`Version: ${gameVersion}`,"top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 12);
+    }, 0.4);
 	writeText(`particles: ${particles.length}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 12);
+    }, 0.4);
     writeText(`Spawn Timer: ${objectSpawnTimer.toFixed("3")}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 12);
+    }, 0.4);
     writeText(`Mouse: ${mousePosition.x + ", " + mousePosition.y}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 12);
+    }, 0.4);
 	writeText(`Mobile: ${isMobile}`, "top-right", {
         x: -8,
         y: yOffset + rowHeight * i++
-    }, 12);
+    }, 0.4);
 }
-
+let logo = new ImageObject("logo", {x:canvas.width/2,y:canvas.height/2-55});
+logo.scale = 0.01;
+isMobile ? logo.scaleToSize(0.25, 1000) : logo.scaleToSize(0.25, 1000);
 let startMusicInt = 0;
 function gameLoop(currentTime) {
+	logo.moveToPoint({x:canvas.width/2,y:canvas.height/2-55});
+	checkMouseMovedRecently();
     requestAnimationFrame(gameLoop); // Continue the loop
 	isMobile = 'ontouchstart' in window;
-	fontScale = isMobile ? 0.6 : 1;
+	fontScale = 0.6;
     if (!audioPlayer.muteMusic && !audioPlayer.isMusicMakingSound() && startMusicInt++ < 500) {
         console.log("Trying to play music");
         audioPlayer.nextMusic();
@@ -798,6 +960,10 @@ function gameLoop(currentTime) {
         resizeCanvasToWindow();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 			
+			if (whatToDraw != "Game") {
+				drawBackground();
+				logo.draw();
+			}
         switch (whatToDraw) {
         case "Main": {
 					selectedMenuOption = changeMenuOption(mainMenuOptions, selectedMenuOption);
@@ -810,7 +976,10 @@ function gameLoop(currentTime) {
                 keepPlayerInBounds();
                 drawGame();
                 updateGame();
-					if (isGameOver && restart) {
+					if (showModal) {
+						drawModal();
+					}
+					if (isGameOver && restart && !showModal) {
 						startGame();
 					}
                 break;
@@ -840,18 +1009,22 @@ function gameLoop(currentTime) {
 			  writeText(`Bishiba @ Patreon`, "bottom-left", {
 				x: 3,
 				y: 0
-			}, 18, "white");
+			}, 1, "white");
         writeText(`version: ${gameVersion}`, "bottom-right", {
 				x: -3,
 				y: 0
-			}, 18, "white");
+			}, 1, "white");
 		  }
-		  if (whatToDraw == "Game") {
+		  if (false) {
 			  
-		  writeText(`timeMod: ${timeMod.toFixed(4)}`, "bottom-right", {
+		  writeText(`mouseMoved: ${mouseMoved}`, "bottom-right", {
 				x: -3,
-				y: 0
-			}, 18, "white");
+				y: -50
+			}, 1, "white");
+			writeText(`selectedMenuOption: ${selectedMenuOption}`, "bottom-right", {
+				x: -3,
+				y: -100
+			}, 1, "white");
 		  }
     }
 }
@@ -862,7 +1035,7 @@ function updateGame() {
     if (!isGameOver) {
         time++;
         if (time % (Math.floor(30 / timeScale)) == 0)
-            score += Math.floor(timeMod);
+            score += Math.round(timeMod);
         if (time % (Math.floor(200 / timeScale)) == 0)
             createGoldStar();
         if (time % (Math.floor(1000 / timeScale)) == 0)
@@ -902,7 +1075,7 @@ function calculateAndDisplayFPS(currentTime) {
     writeText(`FPS: ${fps}`, "top-right", {
         x: -8,
         y: 8
-    }, 12);
+    }, 0.8);
 }
 
 function keepPlayerInBounds(margin = 20) {
@@ -925,10 +1098,11 @@ let restartInt = 0;
 // Start the game function
 function setupGame() {
 	console.log(player.name);
+	createStars();
     audioPlayer.setMasterVolume(0.3);
     canvas.addEventListener('mousedown', startJoystick);
     canvas.addEventListener('touchstart', startJoystick);
-	if (player.name == undefined) openInputModal("Pilot Name");
+	
 	 setupKeyListeners()
     gameLoop();
 }
@@ -959,10 +1133,9 @@ function startGame() {
     goldStars = [];
     stars = [];
     particles = [];
-    createStars();
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-
+	createStars();
 }
 
 function lerp(start, end, amount) {
@@ -1021,25 +1194,61 @@ function updatePlayerPosition() {
     }
 }
 
+function drawRectangle(x, y, width, height, color, transparency = 1) {
+    // Save the current canvas state
+    ctx.save();
 
+    // Set the transparency level (global alpha)
+    ctx.globalAlpha = transparency;
+
+    // Set the fill color
+    ctx.fillStyle = color;
+
+    // Draw the rectangle
+    ctx.fillRect(x, y, width, height);
+
+    // Restore the canvas state to avoid affecting other drawings
+    ctx.restore();
+}
+function drawRectangle(x, y, width, height, color, transparency = 1) {
+    // Save the current canvas state
+    ctx.save();
+
+    // Set the transparency level (global alpha)
+    ctx.globalAlpha = transparency;
+
+    // Set the fill color
+    ctx.fillStyle = color;
+
+    // Calculate the top-left corner based on the center position
+    const topLeftX = x - width / 2;
+    const topLeftY = y - height / 2;
+
+    // Draw the rectangle
+    ctx.fillRect(topLeftX, topLeftY, width, height);
+
+    // Restore the canvas state to avoid affecting other drawings
+    ctx.restore();
+}
 
 let inputStr = '';
 let isModalActive = true;
 let allCaps = true;
-let modalTextPrompt = "";
+let modalTextPrompt = "Pilot Name";
 let maxTextInput = 8;
 
 // Draw the modal with "MESSAGE" and the input area
 function drawModal() {
-	writeText(modalTextPrompt, 'center', {x: 0, y: -35});
+	drawRectangle(canvas.width / 2, canvas.height / 2, 300, 200, "black", 0.9);
+	writeText(modalTextPrompt, 'center', {x: 0, y: -35}, 2, "white");
 
 	let displayText = inputStr;
 	if (allCaps) displayText = displayText.toUpperCase();
-	writeText(displayText.padEnd(maxTextInput, '_'), 'center', {x: 0, y: 0}, 24, "yellow");
-	writeText("For online leaderboard", 'center', {x: 0, y: 50}, 14);
+	writeText(displayText.padEnd(maxTextInput, '_'), 'center', {x: 0, y: 0}, 2, "yellow");
+	writeText("For online leaderboard", 'center', {x: 0, y: 50}, 1.4);
 }
-
-function openInputModal(text, maxInput = 8, allCaps = true) {
+let showModal = false;
+function openInputModal(text, callback = null, maxInput = 8, allCaps = true) {
     modalTextPrompt = text;
     inputStr = ''; // Initialize input string
 
@@ -1068,13 +1277,13 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
         hiddenInput.addEventListener('input', () => {
             inputStr = hiddenInput.value.slice(0, maxInput); // Limit input to maxInput length
             if (allCaps) inputStr = inputStr.toUpperCase();
-            drawModal(); // Update the modal with the current input
         });
     }
 
     // Handle key inputs for PC (or mobile if virtual keyboard is not needed)
     function handleKeyInput(event) {
         if (event.key === 'Enter') {
+				if (inputStr.length == 0) return;
             document.removeEventListener('keydown', handleKeyInput);
             if (isMobile && hiddenInput) {
                 document.body.removeChild(hiddenInput); // Clean up the hidden input for mobile
@@ -1083,25 +1292,21 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
             isModalActive = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             Managers.Cache.save("playerName", { name: inputStr }, "playerData");
-            player.name = inputStr;
-            whatToDraw = "Main";
+            whatToDraw = "Game";
             optionCooldown();
-            return inputStr;
+			  showModal = false;
+			  callback(inputStr);
         }
         if (event.key === 'Backspace') {
             inputStr = inputStr.slice(0, -1); // Remove last character
         } else if (inputStr.length < maxInput && /^[a-zA-Z]$/.test(event.key)) {
+				console.log(event.key);
             inputStr += allCaps ? event.key.toUpperCase() : event.key; // Add character to inputStr
         }
-        drawModal(); // Redraw the modal with the updated input
     }
 
     // Add the keyboard input listener (for PC or fallback)
     document.addEventListener('keydown', handleKeyInput);
-
-    // Initial draw of the modal
-    drawModal();
-    whatToDraw = "NameInput"; // Set the drawing mode
 
     // Helper function for canvas click
     function handleCanvasClick() {
@@ -1112,13 +1317,49 @@ function openInputModal(text, maxInput = 8, allCaps = true) {
         // On mobile, focus on the input when the canvas is clicked
         canvas.addEventListener('click', handleCanvasClick);
     }
+	showModal = true;
 }
 
-// Global variable to store the mouse position
+
+let mouseMoved = false;
+let lastMouseMoveTime = 0;
+let mouseMoveCheckDuration = 300;
 let mousePosition = {
     x: 0,
     y: 0
 };
+
+// Time duration to check if the mouse has moved recently (in milliseconds)
+
+
+// Event listener for mouse movement
+canvas.addEventListener('mousemove', function (event) {
+    // Get the bounding rectangle of the canvas
+    const rect = canvas.getBoundingClientRect();
+
+    // Update the mouse position relative to the canvas
+    mousePosition.x = event.clientX - rect.left;
+    mousePosition.y = event.clientY - rect.top;
+
+    // Update the last mouse movement time
+    lastMouseMoveTime = Date.now();
+    mouseMoved = true;
+});
+
+// Function to check if the mouse has moved within the last `mouseMoveCheckDuration` milliseconds
+function checkMouseMovedRecently() {
+    const currentTime = Date.now();
+    
+    // Check if the mouse moved in the last `mouseMoveCheckDuration` ms
+    if (currentTime - lastMouseMoveTime <= mouseMoveCheckDuration) {
+        return true;
+    } else {
+        mouseMoved = false; // Reset the flag if the mouse hasn't moved recently
+        return false;
+    }
+}
+
+
 let isClicking = false;
 let left = false;
 let right = false;
@@ -1128,6 +1369,7 @@ let enter = false;
 let esc = false;
 let space = false;
 let restart = false;
+
 
 function setupKeyListeners() {
     document.addEventListener('keydown', handleKeyDown);
@@ -1229,6 +1471,21 @@ canvas.addEventListener('mouseup', function () {
 
 // Also reset isClicking if the mouse leaves the canvas
 canvas.addEventListener('mouseleave', function () {
+    isClicking = false;
+});
+
+// Set isClicking to true when the screen is touched
+canvas.addEventListener('touchstart', function () {
+    isClicking = true;
+});
+
+// Set isClicking to false when the touch ends
+canvas.addEventListener('touchend', function () {
+    isClicking = false;
+});
+
+// Also reset isClicking if the touch is canceled (e.g., the finger is dragged off the canvas)
+canvas.addEventListener('touchcancel', function () {
     isClicking = false;
 });
 

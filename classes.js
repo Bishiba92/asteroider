@@ -218,3 +218,224 @@ class Particle {
                 }
             }
         }
+class ImageObject {
+    constructor(imgName, pos, scale = 1, rotation = 0) {
+        this.imgName = imgName;
+        this.img = new Image();
+        this.img.src = `img/${imgName}.png`; // Base image path
+        this.pos = { ...pos }; // {x, y} position
+        this.scale = scale;
+        this.rotation = rotation;
+        this.width = 0;
+        this.height = 0;
+
+        // Preloaded images (initialized first to prevent accidental overwriting)
+        this.selectedImg = null;
+        this.clickedImg = null;
+
+        // Flags for selected and clicked states
+        this.isSelected = false;
+        this.isClicked = false;
+
+        // Initially set hasSelected and hasClicked to false
+        this.hasSelected = false;
+        this.hasClicked = false;
+
+        // Preload the selected and clicked images if they exist
+        this.preloadImage(`${imgName}_Selected`, 'selectedImg', 'hasSelected');
+        this.preloadImage(`${imgName}_Clicked`, 'clickedImg', 'hasClicked');
+
+        // Allow override to disable click and select checks
+        this.overrideClickSelect = false;
+
+        // Load the base image to get the dimensions
+        this.img.onload = () => {
+            this.width = this.img.width * this.scale;
+            this.height = this.img.height * this.scale;
+        };
+
+        // For transitions
+        this.moveFrames = 0;
+        this.moveFrameCount = 0;
+        this.startPos = { x: 0, y: 0 };
+        this.targetPos = { x: 0, y: 0 };
+
+        this.scaleFrames = 0;
+        this.scaleFrameCount = 0;
+        this.startScale = 1;
+        this.targetScale = 1;
+
+        this.rotateFrames = 0;
+        this.rotateFrameCount = 0;
+        this.startRotation = 0;
+        this.targetRotation = 0;
+		
+		  this.onClick = null;
+    }
+
+    // Preload an image, and set the respective image and flag properties if the image exists
+    preloadImage(imagePath, imageProperty, flagProperty) {
+        const img = new Image();
+        img.src = `img/${imagePath}.png`;
+
+        img.onload = () => {
+            if (img.complete && img.naturalHeight !== 0) {
+                this[imageProperty] = img; // Set the preloaded image
+                this[flagProperty] = true; // Set the flag to true if the image exists
+            }
+        };
+
+        img.onerror = () => {
+            this[flagProperty] = false; // Set the flag to false if the image does not exist
+        };
+    }
+
+    // Method to programmatically set the selected state (for keyboard input)
+    setSelected(selected) {
+        this.isSelected = selected;
+    }
+	
+	    changeImage(newImgName) {
+        this.imgName = newImgName;
+        this.img.src = `img/${newImgName}.png`; // Change the base image
+
+        // Preload the new selected and clicked images (reset previous state)
+        this.hasSelected = false;
+        this.hasClicked = false;
+        this.selectedImg = null;
+        this.clickedImg = null;
+
+        // Preload the selected and clicked versions of the new image
+        this.preloadImage(`${newImgName}_Selected`, 'selectedImg', 'hasSelected');
+        this.preloadImage(`${newImgName}_Clicked`, 'clickedImg', 'hasClicked');
+    }
+
+    // Draws the image on the canvas, applying the correct image based on selection/click states
+    draw() {
+        if (this.width === 0 || this.height === 0) return; // Prevent drawing before the image is loaded
+
+        this.update(); // Update the image state for this frame
+
+        ctx.save(); // Save the canvas state
+        ctx.translate(this.pos.x, this.pos.y); // Move the canvas origin to the position
+        ctx.rotate(this.rotation); // Apply rotation
+
+        // Choose the image to draw based on selected/clicked state
+        let imageToDraw = this.img;
+
+        // Use the preloaded selected or clicked images if applicable
+        if (this.isClicked && this.hasClicked) {
+            imageToDraw = this.clickedImg;
+        } else if (this.isSelected && this.hasSelected) {
+            imageToDraw = this.selectedImg;
+        }
+
+        ctx.drawImage(
+            imageToDraw,
+            -this.width / 2, // Offset x by half width to center
+            -this.height / 2, // Offset y by half height to center
+            this.width,
+            this.height
+        );
+        ctx.restore(); // Restore the canvas state
+    }
+
+    // Updates the image's selected and clicked states
+    update() {
+        // Update position, scale, and rotation transitions
+        this.updateTransitions();
+
+        // If overrideClickSelect is true, do not check for selection or clicking
+        if (!this.overrideClickSelect) {
+            // Update selected and clicked states only if applicable
+            if (this.hasSelected) {
+                this.isSelected = this.checkIfSelected(); // Only update if not selected via keyboard
+            }
+            if (this.hasClicked) {
+                this.isClicked = this.isSelected && isClicking;
+					if (this.isClicked && this.onClick != null) this.onClick();
+            }
+        }
+    }
+
+    // Updates transitions (position, scale, rotation) based on frame count
+    updateTransitions() {
+        // Handle position transition (if moveFrames > 0, the transition is active)
+        if (this.moveFrames > 0) {
+            this.moveFrameCount++;
+            const fraction = Math.min(this.moveFrameCount / this.moveFrames, 1);
+
+            this.pos.x = this.startPos.x + (this.targetPos.x - this.startPos.x) * fraction;
+            this.pos.y = this.startPos.y + (this.targetPos.y - this.startPos.y) * fraction;
+
+            if (fraction === 1) {
+                this.moveFrames = 0; // End transition
+            }
+        }
+
+        // Handle scale transition
+        if (this.scaleFrames > 0) {
+            this.scaleFrameCount++;
+            const fraction = Math.min(this.scaleFrameCount / this.scaleFrames, 1);
+
+            this.scale = this.startScale + (this.targetScale - this.startScale) * fraction;
+            this.width = this.img.width * this.scale;
+            this.height = this.img.height * this.scale;
+
+            if (fraction === 1) {
+                this.scaleFrames = 0; // End transition
+            }
+        }
+
+        // Handle rotation transition
+        if (this.rotateFrames > 0) {
+            this.rotateFrameCount++;
+            const fraction = Math.min(this.rotateFrameCount / this.rotateFrames, 1);
+
+            this.rotation = this.startRotation + (this.targetRotation - this.startRotation) * fraction;
+
+            if (fraction === 1) {
+                this.rotateFrames = 0; // End transition
+            }
+        }
+    }
+
+    // Checks if the image is selected based on the mouse position
+    checkIfSelected() {
+        const left = this.pos.x - this.width / 2;
+        const right = this.pos.x + this.width / 2;
+        const top = this.pos.y - this.height / 2;
+        const bottom = this.pos.y + this.height / 2;
+
+        return (
+            mousePosition.x >= left &&
+            mousePosition.x <= right &&
+            mousePosition.y >= top &&
+            mousePosition.y <= bottom
+        );
+    }
+
+    // Method to move the image to a new position over a specified number of frames
+    moveToPoint(targetPos, transitionFrames = 1) {
+        this.startPos = { ...this.pos }; // Store the starting position
+        this.targetPos = { ...targetPos }; // Set the target position
+        this.moveFrames = transitionFrames; // Number of frames for transition
+        this.moveFrameCount = 0; // Reset frame counter
+    }
+
+    // Method to scale the image to a new scale over a specified number of frames
+    scaleToSize(targetScale, transitionFrames = 1) {
+        this.startScale = this.scale; // Store the current scale
+        this.targetScale = targetScale; // Set the target scale
+        this.scaleFrames = transitionFrames; // Number of frames for transition
+        this.scaleFrameCount = 0; // Reset frame counter
+    }
+
+    // Method to rotate the image to a new angle over a specified number of frames
+    rotateToAngle(targetRotation, transitionFrames = 1) {
+        this.startRotation = this.rotation; // Store the current rotation
+        this.targetRotation = targetRotation; // Set the target rotation
+        this.rotateFrames = transitionFrames; // Number of frames for transition
+        this.rotateFrameCount = 0; // Reset frame counter
+    }
+}

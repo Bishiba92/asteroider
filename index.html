@@ -8,6 +8,12 @@
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
     />
+	<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+	<style>
+	  body {
+		font-family: 'Audiowide', sans-serif;
+	  }
+	</style>
 	<link rel="icon" type="image/png" href="favicon.png">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-app.js"></script>
@@ -16,48 +22,33 @@
     <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-auth.js"></script>
 	<script src="firebase.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-        canvas {
-            border: 3px solid #fff;
-        }
-        #score {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        #message {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            color: red;
-        }
-        #shields {
-            position: absolute;
-            top: 60px;
-            left: 20px;
-            font-size: 24px;
-            color: cyan;
-        }
+		html, body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			height: 100%;
+		}
+
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			background-color: black; /* Optional background color */
+		}
+
+		canvas {
+			margin: 0;
+			padding: 0;
+			border: none;
+			max-width: 100%;
+			max-height: 100%;
+			display: block;
+		}
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="0" height="0"></canvas>
-    <div id="message"></div>
-	
 	<script src="cache.js" defer></script>
 	<script src="https://bishiba92.github.io/bishiba-js-audio-player/audioPlayer.js" defer></script>
 	<script src="joystick.js" defer></script>
