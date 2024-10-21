@@ -212,7 +212,7 @@ function drawPlayer() {
 
     // Get the player's ship image
     const img = player.ship.img;
-	const scale = 0.07;
+	const scale = 1;
     // Adjust the image dimensions based on the player's scale factor
     const imgWidth = player.ship.img.width * scale;
     const imgHeight = player.ship.img.height * scale;
@@ -593,7 +593,7 @@ let playerShipImage = new ImageObject(player.ship.imgName, {
     y: canvas.height / 2 + 255
 });
 playerShipImage.onClick = nextShip;
-playerShipImage.scale = 0.1;
+playerShipImage.scale = 0.5;
 
 let optionClicked = [];
 function anyOptionClicked() {
