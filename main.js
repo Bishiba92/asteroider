@@ -1,5 +1,4 @@
-
-const gameVersion = "1.15";
+const gameVersion = "1.16";
 let isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 let textDefaults = {
@@ -199,23 +198,35 @@ function createGoldStar() {
 }
 function drawPlayer() {
     ctx.save();
+    
+    // Translate to player position
     ctx.translate(player.x, player.y); 
+    
+    // Rotate the canvas to the player's angle
     ctx.rotate(player.angle); 
 
+    // Handle transparency effect if the player is immortal and doesn't have a shield
     if (player.isImmortal && !player.hasShield) {
         ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.05) * 0.5;
     }
 
+    // Get the player's ship image
     const img = player.ship.img;
+	const scale = 0.07;
+    // Adjust the image dimensions based on the player's scale factor
+    const imgWidth = player.ship.img.width * scale;
+    const imgHeight = player.ship.img.height * scale;
 
-    const imgWidth = player.ship.img.width * player.scale;
-    const imgHeight = player.ship.img.height * player.scale;
-
+    // Draw the ship image with scaling applied
     ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
 
+    // Restore the canvas state
     ctx.restore();
+    
+    // Reset globalAlpha back to full opacity
     ctx.globalAlpha = 1.0;
 }
+
 function drawShieldCircle() {
     if (player.hasShield) {
         ctx.save();
@@ -582,7 +593,7 @@ let playerShipImage = new ImageObject(player.ship.imgName, {
     y: canvas.height / 2 + 255
 });
 playerShipImage.onClick = nextShip;
-playerShipImage.scale = 0.5;
+playerShipImage.scale = 0.1;
 
 let optionClicked = [];
 function anyOptionClicked() {
@@ -981,7 +992,7 @@ function drawGame() {
             x: 35,
             y: 80
         }, 2, "yellow");
-		if (true) drawGameTestTexts();
+		if (false) drawGameTestTexts();
         backButton.moveToPoint({
             x: canvas.width - 50,
             y: 50
