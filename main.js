@@ -750,7 +750,7 @@ break;
 });*/
 
 let selectOptionCooldown = 0;
-let selectOptionTimer = 30;
+let selectOptionTimer = 15;
 function optionCooldown() {
     selectOptionCooldown = selectOptionTimer;
 }
@@ -1175,7 +1175,7 @@ function updateGame() {
             createGoldStar();
         if (time % (Math.floor(1000 / timeScale)) == 0)
             createShield();
-        objectSpawnTimer = Math.max(35 - Math.floor(time / 450), 8);
+        objectSpawnTimer = Math.max(35 - Math.floor(time / (timeScale * 450)), 8);
         if (time % (Math.floor(objectSpawnTimer * objectSpawnRateByWidthOfScreen / timeScale)) == 0)
             createObstacle();
         immortalTimer();
@@ -1262,6 +1262,7 @@ function startGame() {
 	asteroidsHit = 0;
 	totalShields = 0;
 	totalGoldStars = 0;
+	player.hasShield = false; // Thanks Zee
     score = 0;
     time = 0;
     player.shields = player.ship.health;

@@ -1,0 +1,11 @@
+version 1.18
+
+Bug fixes:
+If you had the extra shield on the ship model during play and hit ESC, then when you started the game again, you'd still have the shield.
+
+Balancing:
+Flacon has had it's size changed from 1.1 to 0.9.
+Hawk has had it's size changed from 1.0 to 1.1.
+
+Menu issues:
+The 30 ms delay is considered to long. It is now set to 15 ms.

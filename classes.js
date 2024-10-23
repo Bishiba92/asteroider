@@ -491,13 +491,13 @@ class Ship {
     }
 }
 // Creating the Falcon ship
-const falcon = new Ship('Falcon', 'ship0', 1.4, 1.1, 3, 1.1, 0);
+const falcon = new Ship('Falcon', 'ship0', 1.4, 1.1, 3, 0.9, 0);
 
 // Creating the Raven ship
 const raven = new Ship('Raven', 'ship1', 0.9, 0.8, 4, 1.3, 1);
 
 // Creating the Hawk ship
-const hawk = new Ship('Hawk', 'ship2', 1.3, 1.4, 3, 1, 2);
+const hawk = new Ship('Hawk', 'ship2', 1.3, 1.4, 3, 1.1, 2);
 
 let ships = [
 	falcon,
